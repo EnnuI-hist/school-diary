@@ -1009,6 +1009,7 @@
       subjectsMap[subj] = {
         name: subj,
         totalLessons: 0,
+        totalPlanned: 0,
         unexcused: 0,
         excused: 0,
         marks: []
@@ -1055,8 +1056,17 @@
             }
 
             if (!subjectsMap[subj]) {
-              subjectsMap[subj] = { name: subj, totalLessons: 0, unexcused: 0, excused: 0, marks: [] };
+              subjectsMap[subj] = {
+                name: subj,
+                totalLessons: 0,
+                totalPlanned: 0,
+                unexcused: 0,
+                excused: 0,
+                marks: []
+              };
             }
+
+            subjectsMap[subj].totalPlanned++;
 
             if (isIncluded) {
               subjectsMap[subj].totalLessons++;
@@ -1264,6 +1274,49 @@
       `;
     }
 
+    // Расчет запаса прочности по прогулам
+    const totalPlanned = item.totalPlanned || 0;
+    const currentN = item.unexcused || 0;
+    // Максимально допустимое количество прогулов («Н») до порога,
+    // чтобы процент оставался строго ниже установленного порога:
+    const maxAllowedSkips = totalPlanned > 0
+      ? Math.max(0, Math.ceil(totalPlanned * (threshold / 100)) - 1)
+      : 0;
+    const remainingSkips = maxAllowedSkips - currentN;
+
+    let safetyMarginHtml = '';
+    if (totalPlanned === 0) {
+      safetyMarginHtml = `
+        <div class="skips-safety-box skips-safety-empty">
+          <span class="skips-subtext">Нет запланированных уроков в расписании выбранного периода</span>
+        </div>
+      `;
+    } else if (remainingSkips > 0) {
+      const skipsText = formatCountWithWord(remainingSkips, 'урок', 'урока', 'уроков');
+      safetyMarginHtml = `
+        <div class="skips-safety-box skips-safety-safe" title="Количество уроков, которые можно пропустить со статусом «Н» без превышения порога ${threshold}%">
+          <span class="skips-safety-title">🟢 Можно еще скипнуть: ${skipsText}</span>
+          <span class="skips-subtext">(из ${maxAllowedSkips} допустимых за период)</span>
+        </div>
+      `;
+    } else if (remainingSkips === 0) {
+      safetyMarginHtml = `
+        <div class="skips-safety-box skips-safety-exhausted" title="Следующий прогул превысит установленный порог ${threshold}%">
+          <span class="skips-safety-title">🟡 Запас исчерпан: 0 уроков</span>
+          <span class="skips-subtext">(следующий прогул превысит порог)</span>
+        </div>
+      `;
+    } else {
+      const exceeded = Math.abs(remainingSkips);
+      const exceededText = formatCountWithWord(exceeded, 'урок', 'урока', 'уроков');
+      safetyMarginHtml = `
+        <div class="skips-safety-box skips-safety-exceeded" title="Порог риска ${threshold}% превышен">
+          <span class="skips-safety-title">🔴 Лимит превышен на ${exceededText}</span>
+          <span class="skips-subtext">(порог: ${threshold}%)</span>
+        </div>
+      `;
+    }
+
     const avgDisplay = avg !== null ? avg.toFixed(2) : '—';
 
     card.innerHTML = `
@@ -1308,6 +1361,7 @@
           <div class="att-progress-present"></div>
         </div>
 
+        ${safetyMarginHtml}
         ${riskHtml}
       </div>
     `;

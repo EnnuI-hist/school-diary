@@ -1876,6 +1876,55 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   margin-top: 4px;
 }
 
+/* Блок запаса прочности по прогулам */
+.skips-safety-box {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-top: 6px;
+  line-height: 1.4;
+  transition: var(--transition);
+}
+
+.skips-safety-safe {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.skips-safety-exhausted {
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #fde68a;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.skips-safety-exceeded {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.skips-safety-empty {
+  background-color: var(--bg-hover);
+  color: var(--text-muted);
+  border: 1px solid var(--border-card);
+}
+
+.skips-safety-title {
+  font-weight: 600;
+}
+
+.skips-subtext {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
 /* ==========================================================================
    Уведомления (Toast)
    ========================================================================== */
