@@ -137,6 +137,7 @@
     diaryRecords: {},
     dayNotes: {},
     absenceWarningThreshold: 50,
+    minGradesForAttestation: 3,
     customHolidays: {}
   };
 
@@ -159,6 +160,7 @@
     initStats();
     initSemesterDates();
     initAbsenceThresholdSetting();
+    initMinGradesSetting();
     initHolidays();
     initSubjectsManager();
     initWeekSchedule();
@@ -190,6 +192,9 @@
         if (typeof parsed.absenceWarningThreshold === 'number' && !isNaN(parsed.absenceWarningThreshold)) {
           upgraded.absenceWarningThreshold = Math.max(10, Math.min(100, parsed.absenceWarningThreshold));
         }
+        if (typeof parsed.minGradesForAttestation === 'number' && !isNaN(parsed.minGradesForAttestation)) {
+          upgraded.minGradesForAttestation = Math.max(1, Math.min(20, Math.round(parsed.minGradesForAttestation)));
+        }
         if (parsed.customHolidays && typeof parsed.customHolidays === 'object') {
           upgraded.customHolidays = parsed.customHolidays;
         }
@@ -208,6 +213,10 @@
         ? Math.max(10, Math.min(100, parsed.absenceWarningThreshold))
         : DEFAULT_SETTINGS.absenceWarningThreshold;
 
+      const minGradesForAttestation = (typeof parsed.minGradesForAttestation === 'number' && !isNaN(parsed.minGradesForAttestation))
+        ? Math.max(1, Math.min(20, Math.round(parsed.minGradesForAttestation)))
+        : DEFAULT_SETTINGS.minGradesForAttestation;
+
       return {
         configVersion: parsed.configVersion || CONFIG_VERSION,
         semesters,
@@ -217,6 +226,7 @@
         diaryRecords: parsed.diaryRecords && typeof parsed.diaryRecords === 'object' ? parsed.diaryRecords : {},
         dayNotes: parsed.dayNotes && typeof parsed.dayNotes === 'object' ? parsed.dayNotes : {},
         absenceWarningThreshold,
+        minGradesForAttestation,
         customHolidays: (parsed.customHolidays && typeof parsed.customHolidays === 'object') ? parsed.customHolidays : {}
       };
     } catch (e) {
@@ -1106,6 +1116,7 @@
         name: subj,
         totalLessons: 0,
         totalPlanned: 0,
+        passedLessons: 0,
         unexcused: 0,
         excused: 0,
         marks: []
@@ -1158,6 +1169,7 @@
                 name: subj,
                 totalLessons: 0,
                 totalPlanned: 0,
+                passedLessons: 0,
                 unexcused: 0,
                 excused: 0,
                 marks: []
@@ -1165,6 +1177,9 @@
             }
 
             subjectsMap[subj].totalPlanned++;
+            if (isPassed) {
+              subjectsMap[subj].passedLessons++;
+            }
 
             if (isIncluded) {
               subjectsMap[subj].totalLessons++;
@@ -1288,10 +1303,10 @@
     }
 
     // 3. Карточки по каждому предмету
-    renderSubjectsStats(stats.subjectsMap);
+    renderSubjectsStats(stats.subjectsMap, statsMode);
   }
 
-  function renderSubjectsStats(subjectsMap) {
+  function renderSubjectsStats(subjectsMap, mode = 'current') {
     const container = document.getElementById('stats-subjects-container');
     if (!container) return;
 
@@ -1305,12 +1320,12 @@
 
     subjectNames.forEach(name => {
       const item = subjectsMap[name];
-      const card = createSubjectStatCard(item);
+      const card = createSubjectStatCard(item, mode);
       container.appendChild(card);
     });
   }
 
-  function createSubjectStatCard(item) {
+  function createSubjectStatCard(item, mode = 'current') {
     const card = document.createElement('div');
     card.className = 'subject-stat-card';
 
@@ -1373,33 +1388,36 @@
     }
 
     // Расчет запаса прочности по прогулам
-    const totalPlanned = item.totalPlanned || 0;
+    const isCurrentMode = mode === 'current';
+    const baseLessons = isCurrentMode ? (item.passedLessons || 0) : (item.totalPlanned || 0);
     const currentN = item.unexcused || 0;
+
     // Максимально допустимое количество прогулов («Н») до порога,
     // чтобы процент оставался строго ниже установленного порога:
-    const maxAllowedSkips = totalPlanned > 0
-      ? Math.max(0, Math.ceil(totalPlanned * (threshold / 100)) - 1)
+    const maxAllowedSkips = baseLessons > 0
+      ? Math.max(0, Math.ceil(baseLessons * (threshold / 100)) - 1)
       : 0;
     const remainingSkips = maxAllowedSkips - currentN;
+    const periodSuffix = isCurrentMode ? 'на сегодня' : 'за период';
 
     let safetyMarginHtml = '';
-    if (totalPlanned === 0) {
+    if (baseLessons === 0) {
       safetyMarginHtml = `
         <div class="skips-safety-box skips-safety-empty">
-          <span class="skips-subtext">Нет запланированных уроков в расписании выбранного периода</span>
+          <span class="skips-subtext">${isCurrentMode ? 'Нет прошедших уроков на текущий день' : 'Нет запланированных уроков в расписании выбранного периода'}</span>
         </div>
       `;
     } else if (remainingSkips > 0) {
       const skipsText = formatCountWithWord(remainingSkips, 'урок', 'урока', 'уроков');
       safetyMarginHtml = `
-        <div class="skips-safety-box skips-safety-safe" title="Количество уроков, которые можно пропустить со статусом «Н» без превышения порога ${threshold}%">
+        <div class="skips-safety-box skips-safety-safe" title="Количество уроков, которые можно пропустить со статусом «Н» без превышения порога ${threshold}% (${periodSuffix})">
           <span class="skips-safety-title">🟢 Можно еще скипнуть: ${skipsText}</span>
-          <span class="skips-subtext">(из ${maxAllowedSkips} допустимых за период)</span>
+          <span class="skips-subtext">(из ${maxAllowedSkips} допустимых ${periodSuffix})</span>
         </div>
       `;
     } else if (remainingSkips === 0) {
       safetyMarginHtml = `
-        <div class="skips-safety-box skips-safety-exhausted" title="Следующий прогул превысит установленный порог ${threshold}%">
+        <div class="skips-safety-box skips-safety-exhausted" title="Следующий прогул превысит установленный порог ${threshold}% (${periodSuffix})">
           <span class="skips-safety-title">🟡 Запас исчерпан: 0 уроков</span>
           <span class="skips-subtext">(следующий прогул превысит порог)</span>
         </div>
@@ -1412,6 +1430,28 @@
           <span class="skips-safety-title">🔴 Лимит превышен на ${exceededText}</span>
           <span class="skips-subtext">(порог: ${threshold}%)</span>
         </div>
+      `;
+    }
+
+    // Индикатор минимального количества оценок для аттестации
+    const minGrades = (typeof state.minGradesForAttestation === 'number' && !isNaN(state.minGradesForAttestation))
+      ? state.minGradesForAttestation
+      : 3;
+    const marksCount = marks.length;
+
+    let attestationBadgeHtml = '';
+    if (marksCount < minGrades) {
+      const needed = minGrades - marksCount;
+      attestationBadgeHtml = `
+        <span class="attestation-badge attestation-badge-warning" title="Для аттестации по предмету требуется минимум ${minGrades} оценок">
+          Нужно еще ${needed} оц. для аттестации
+        </span>
+      `;
+    } else {
+      attestationBadgeHtml = `
+        <span class="attestation-badge attestation-badge-ok" title="Минимум оценок для аттестации (${minGrades}) набран">
+          ✓ Минимум для аттестации есть
+        </span>
       `;
     }
 
@@ -1431,7 +1471,10 @@
       </div>
 
       <div class="subject-marks-row">
-        <div class="marks-row-header">Оценки (${marks.length}):</div>
+        <div class="marks-row-header">
+          <span>Оценки (${marksCount}):</span>
+          ${attestationBadgeHtml}
+        </div>
         <div class="subject-marks-list">
           ${marksListHtml}
         </div>
@@ -1603,6 +1646,44 @@
       const val = parseInt(input.value, 10);
       if (!isNaN(val) && val >= 10 && val <= 100) {
         state.absenceWarningThreshold = val;
+        saveSettings();
+        renderStats();
+      }
+    });
+  }
+
+  /* ==========================================================================
+     Минимум оценок для аттестации
+     ========================================================================== */
+  function initMinGradesSetting() {
+    const input = document.getElementById('min-grades-input');
+    if (!input) return;
+
+    input.value = typeof state.minGradesForAttestation === 'number'
+      ? state.minGradesForAttestation
+      : 3;
+
+    const commitMinGrades = () => {
+      let val = parseInt(input.value, 10);
+      if (isNaN(val)) {
+        val = 3;
+      }
+      val = Math.max(1, Math.min(20, val));
+      input.value = val;
+
+      if (state.minGradesForAttestation !== val) {
+        state.minGradesForAttestation = val;
+        saveSettings();
+        renderStats();
+        showToast(`Минимум оценок для аттестации: ${val}`, 'info');
+      }
+    };
+
+    input.addEventListener('change', commitMinGrades);
+    input.addEventListener('input', () => {
+      const val = parseInt(input.value, 10);
+      if (!isNaN(val) && val >= 1 && val <= 20) {
+        state.minGradesForAttestation = val;
         saveSettings();
         renderStats();
       }
@@ -1971,6 +2052,9 @@
             absenceWarningThreshold: (typeof imported.absenceWarningThreshold === 'number' && !isNaN(imported.absenceWarningThreshold))
               ? Math.max(10, Math.min(100, imported.absenceWarningThreshold))
               : DEFAULT_SETTINGS.absenceWarningThreshold,
+            minGradesForAttestation: (typeof imported.minGradesForAttestation === 'number' && !isNaN(imported.minGradesForAttestation))
+              ? Math.max(1, Math.min(20, Math.round(imported.minGradesForAttestation)))
+              : DEFAULT_SETTINGS.minGradesForAttestation,
             customHolidays: (imported.customHolidays && typeof imported.customHolidays === 'object')
               ? imported.customHolidays
               : {}
@@ -1980,6 +2064,7 @@
 
           initSemesterDates();
           initAbsenceThresholdSetting();
+          initMinGradesSetting();
           renderHolidaysList();
           renderSubjectsTags();
           refreshAllDaySelects();
@@ -2006,6 +2091,7 @@
 
         initSemesterDates();
         initAbsenceThresholdSetting();
+        initMinGradesSetting();
         renderHolidaysList();
         renderSubjectsTags();
         refreshAllDaySelects();

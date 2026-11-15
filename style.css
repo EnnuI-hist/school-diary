@@ -1727,18 +1727,25 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   display: flex;
   align-items: baseline;
   gap: 8px;
+  min-width: 0;
+  flex: 1;
 }
 
-.subject-title {
+.subject-title,
+.subject-name-box h3 {
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-primary);
+  min-width: 0;
+  flex: 1;
+  word-break: break-word;
 }
 
 .grade-badge-group {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .projected-grade-badge {
@@ -1799,11 +1806,41 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 }
 
 .marks-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+}
+
+.attestation-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.73rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: nowrap;
+}
+
+.attestation-badge-warning {
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.attestation-badge-ok {
+  background-color: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
 }
 
 .subject-marks-list {
@@ -1883,7 +1920,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   font-size: 0.8rem;
   color: var(--text-secondary);
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 6px 12px;
 }
 
 .att-progress-track {

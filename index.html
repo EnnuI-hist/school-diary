@@ -372,14 +372,14 @@
             </div>
           </div>
 
-          <!-- Блок 4: Контроль посещаемости -->
+          <!-- Блок 4: Контроль посещаемости и аттестации -->
           <div class="card settings-card">
             <div class="card-header">
               <div class="card-title-group">
                 <span class="badge">Блок 4</span>
-                <h2>Контроль посещаемости</h2>
+                <h2>Контроль посещаемости и аттестации</h2>
               </div>
-              <p class="card-description">Настройка порога предупреждения о риске неаттестации по предметам во вкладке «Статистика».</p>
+              <p class="card-description">Настройка порога предупреждения о риске неаттестации и минимального числа оценок во вкладке «Статистика».</p>
             </div>
             
             <div class="card-body">
@@ -391,6 +391,15 @@
                     <span class="input-unit">%</span>
                   </div>
                   <span class="form-hint">При достижении этого процента прогулов (Н) карточка подсветится красным. За 10% до порога — желтым.</span>
+                </div>
+
+                <div class="form-group" style="max-width: 320px;">
+                  <label for="min-grades-input">Минимум оценок для аттестации за семестр:</label>
+                  <div class="input-with-unit">
+                    <input type="number" id="min-grades-input" class="input-control" min="1" max="20" step="1" value="3">
+                    <span class="input-unit">оц.</span>
+                  </div>
+                  <span class="form-hint">Минимальное количество оценок по предмету для аттестации (по умолчанию 3).</span>
                 </div>
               </div>
             </div>
