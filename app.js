@@ -14,7 +14,7 @@
   const LAST_UPDATED_KEY = 'school_diary_last_updated';
 
   // Константы подключения к Supabase REST API
-  const SUPABASE_URL = 'https://supabase.co';
+  const SUPABASE_URL = 'https://xqaqcjozsupvbkypits.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_5QoL5hjNIClH56TL1x74IQ_f9opvXGa';
   const SYNC_TABLE = 'diary_sync';
 
