@@ -2168,7 +2168,7 @@
         className += 'sync-status-saving';
         break;
       case 'error':
-        text = '⚠ Ошибка сети (работает локально)';
+        text = detail ? (detail.startsWith('⚠') ? detail : `⚠ ${detail}`) : '⚠ Ошибка сети (работает локально)';
         className += 'sync-status-error';
         break;
       case 'disabled':
@@ -2181,11 +2181,72 @@
     if (headerBadge) {
       headerBadge.className = className;
       headerBadge.textContent = text;
+      headerBadge.title = text;
     }
     if (settingsBadge) {
       settingsBadge.className = className;
       settingsBadge.textContent = text;
+      settingsBadge.title = text;
     }
+  }
+
+  async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, timeoutMs);
+
+    try {
+      const res = await fetch(url, {
+        ...options,
+        signal: controller.signal
+      });
+      return res;
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        const timeoutError = new Error('Таймаут (10 сек) / Нет связи с сервером');
+        timeoutError.isTimeout = true;
+        throw timeoutError;
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  async function extractErrorMessage(res) {
+    let detail = '';
+    try {
+      const text = await res.text();
+      if (text) {
+        try {
+          const json = JSON.parse(text);
+          detail = json.message || json.error_description || json.msg || json.error || text;
+        } catch (_) {
+          detail = text.length > 80 ? text.substring(0, 80) + '...' : text;
+        }
+      }
+    } catch (_) {}
+
+    if (detail) {
+      return `Ошибка API (${res.status}): ${detail}`;
+    }
+    return `Ошибка API (${res.status})`;
+  }
+
+  function formatErrorForUI(err) {
+    if (!err) return '⚠ Ошибка сети (работает локально)';
+    const msg = err.message || String(err);
+    if (err.isTimeout || err.name === 'AbortError' || msg.includes('Таймаут')) {
+      return '⚠ Таймаут / Нет связи с сервером';
+    }
+    if (msg.startsWith('Ошибка API') || msg.startsWith('⚠ Ошибка API')) {
+      return msg.startsWith('⚠') ? msg : `⚠ ${msg}`;
+    }
+    if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('Network request failed')) {
+      return '⚠ Нет связи с сервером (Failed to fetch)';
+    }
+    return `⚠ ${msg}`;
   }
 
   function triggerCloudSyncDebounced() {
@@ -2218,31 +2279,32 @@
     } catch (_) {}
 
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/${SYNC_TABLE}`, {
+      const res = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/${SYNC_TABLE}`, {
         method: 'POST',
         headers: {
           'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json',
-          'Prefer': 'resolution=merge-duplicates'
+          'Prefer': 'resolution=merge-duplicates,return=minimal'
         },
         body: JSON.stringify({
           sync_id: syncId,
           payload: state,
           updated_at: nowISO
         })
-      });
+      }, 10000);
 
       if (!res.ok) {
-        throw new Error(`HTTP error ${res.status}`);
+        const errMsg = await extractErrorMessage(res);
+        throw new Error(errMsg);
       }
 
       const timeStr = formatSyncTime(nowISO);
       updateSyncStatus('synced', timeStr);
       return true;
     } catch (err) {
+      const errText = formatErrorForUI(err);
       console.warn('Ошибка облачной синхронизации (сохранено локально):', err);
-      updateSyncStatus('error');
+      updateSyncStatus('error', errText);
       return false;
     }
   }
@@ -2258,16 +2320,16 @@
 
     try {
       const url = `${SUPABASE_URL}/rest/v1/${SYNC_TABLE}?sync_id=eq.${encodeURIComponent(syncId)}&select=*`;
-      const res = await fetch(url, {
+      const res = await fetchWithTimeout(url, {
         method: 'GET',
         headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          'apikey': SUPABASE_ANON_KEY
         }
-      });
+      }, 10000);
 
       if (!res.ok) {
-        throw new Error(`HTTP error ${res.status}`);
+        const errMsg = await extractErrorMessage(res);
+        throw new Error(errMsg);
       }
 
       const rows = await res.json();
@@ -2306,8 +2368,12 @@
         return { success: true, notFound: true };
       }
     } catch (err) {
+      const errText = formatErrorForUI(err);
       console.warn('Ошибка загрузки из облака (работает локально):', err);
-      updateSyncStatus('error');
+      updateSyncStatus('error', errText);
+      if (!silent) {
+        showToast(errText, 'error');
+      }
       return { success: false, error: err };
     }
   }
@@ -2377,16 +2443,16 @@
     try {
       // 1. Сначала делаем GET запрос, чтобы проверить наличие данных в облаке
       const url = `${SUPABASE_URL}/rest/v1/${SYNC_TABLE}?sync_id=eq.${encodeURIComponent(syncId)}&select=*`;
-      const res = await fetch(url, {
+      const res = await fetchWithTimeout(url, {
         method: 'GET',
         headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          'apikey': SUPABASE_ANON_KEY
         }
-      });
+      }, 10000);
 
       if (!res.ok) {
-        throw new Error(`HTTP error ${res.status}`);
+        const errMsg = await extractErrorMessage(res);
+        throw new Error(errMsg);
       }
 
       const rows = await res.json();
@@ -2412,14 +2478,17 @@
       }
 
       // Если в облаке еще нет данных (новый ключ) — отправляем локальный стейт
-      await pushToCloud();
-      showToast('Ключ подключен! Данные сохранены в облако', 'success');
+      const pushed = await pushToCloud();
+      if (pushed) {
+        showToast('Ключ подключен! Данные сохранены в облако', 'success');
+      }
       updateSyncUI();
     } catch (err) {
+      const errText = formatErrorForUI(err);
       console.warn('Ошибка подключения к облаку:', err);
       setSyncId(syncId);
-      updateSyncStatus('error');
-      showToast('Ключ сохранен, но сервер временно недоступен (работает локально)', 'info');
+      updateSyncStatus('error', errText);
+      showToast(errText, 'error');
       updateSyncUI();
     }
   }

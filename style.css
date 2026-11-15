@@ -771,6 +771,19 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   user-select: none;
 }
 
+#header-sync-badge {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#settings-sync-status {
+  white-space: normal;
+  word-break: break-word;
+  max-width: 100%;
+}
+
 .sync-status-synced {
   background-color: var(--success-soft);
   color: #34d399;
