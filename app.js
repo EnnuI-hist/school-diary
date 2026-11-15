@@ -10,6 +10,13 @@
   // Константы ключей в localStorage
   const STORAGE_KEY = 'school_diary_10_settings_v1';
   const ACTIVE_TAB_KEY = 'school_diary_active_tab';
+  const SYNC_STORAGE_KEY = 'school_diary_sync_id';
+  const LAST_UPDATED_KEY = 'school_diary_last_updated';
+
+  // Константы подключения к Supabase REST API
+  const SUPABASE_URL = 'https://supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_5QoL5hjNIClH56TL1x74IQ_f9opvXGa';
+  const SYNC_TABLE = 'diary_sync';
 
   // Текущая версия схемы конфигурации по умолчанию
   const CONFIG_VERSION = 2;
@@ -138,7 +145,8 @@
     dayNotes: {},
     absenceWarningThreshold: 50,
     minGradesForAttestation: 3,
-    customHolidays: {}
+    customHolidays: {},
+    lastUpdated: new Date().toISOString()
   };
 
   // Рабочее состояние приложения
@@ -150,6 +158,9 @@
   // Состояние фильтрации во вкладке «Статистика»
   let statsPeriod = getDefaultPeriod();
   let statsMode = 'current'; // 'current' (прошедшие уроки) или 'all' (план за весь период)
+
+  // Глобальный переключатель вкладок
+  let switchTab = null;
 
   /* ==========================================================================
      Инициализация приложения
@@ -165,16 +176,59 @@
     initSubjectsManager();
     initWeekSchedule();
     initBackupActions();
+    initCloudSync();
   });
 
   /* ==========================================================================
      Хранилище (localStorage) и версионирование настроек
      ========================================================================== */
+  function sanitizeLoadedState(parsed) {
+    if (!parsed || typeof parsed !== 'object') {
+      return JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+    }
+
+    const semesters = {
+      sem1Start: parsed.semesters?.sem1Start || DEFAULT_SETTINGS.semesters.sem1Start,
+      sem1End: parsed.semesters?.sem1End || DEFAULT_SETTINGS.semesters.sem1End,
+      sem2Start: parsed.semesters?.sem2Start || DEFAULT_SETTINGS.semesters.sem2Start,
+      sem2End: parsed.semesters?.sem2End || DEFAULT_SETTINGS.semesters.sem2End
+    };
+
+    const absenceWarningThreshold = (typeof parsed.absenceWarningThreshold === 'number' && !isNaN(parsed.absenceWarningThreshold))
+      ? Math.max(10, Math.min(100, parsed.absenceWarningThreshold))
+      : DEFAULT_SETTINGS.absenceWarningThreshold;
+
+    const minGradesForAttestation = (typeof parsed.minGradesForAttestation === 'number' && !isNaN(parsed.minGradesForAttestation))
+      ? Math.max(1, Math.min(20, Math.round(parsed.minGradesForAttestation)))
+      : DEFAULT_SETTINGS.minGradesForAttestation;
+
+    const lastUpdated = parsed.lastUpdated || localStorage.getItem(LAST_UPDATED_KEY) || new Date().toISOString();
+
+    return {
+      configVersion: parsed.configVersion || CONFIG_VERSION,
+      semesters,
+      holidays: Array.isArray(parsed.holidays) ? parsed.holidays : [...DEFAULT_SETTINGS.holidays],
+      subjects: Array.isArray(parsed.subjects) && parsed.subjects.length > 0 ? parsed.subjects : [...DEFAULT_SETTINGS.subjects],
+      schedule: sanitizeSchedule(parsed.schedule),
+      diaryRecords: parsed.diaryRecords && typeof parsed.diaryRecords === 'object' ? parsed.diaryRecords : {},
+      dayNotes: parsed.dayNotes && typeof parsed.dayNotes === 'object' ? parsed.dayNotes : {},
+      absenceWarningThreshold,
+      minGradesForAttestation,
+      customHolidays: (parsed.customHolidays && typeof parsed.customHolidays === 'object') ? parsed.customHolidays : {},
+      lastUpdated
+    };
+  }
+
   function loadSettings() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) {
-        return JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+        const initial = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+        initial.lastUpdated = new Date().toISOString();
+        try {
+          localStorage.setItem(LAST_UPDATED_KEY, initial.lastUpdated);
+        } catch (_) {}
+        return initial;
       }
       const parsed = JSON.parse(raw);
       
@@ -198,37 +252,19 @@
         if (parsed.customHolidays && typeof parsed.customHolidays === 'object') {
           upgraded.customHolidays = parsed.customHolidays;
         }
+        upgraded.lastUpdated = parsed.lastUpdated || localStorage.getItem(LAST_UPDATED_KEY) || new Date().toISOString();
         localStorage.setItem(STORAGE_KEY, JSON.stringify(upgraded));
+        localStorage.setItem(LAST_UPDATED_KEY, upgraded.lastUpdated);
         return upgraded;
       }
 
-      const semesters = {
-        sem1Start: parsed.semesters?.sem1Start || DEFAULT_SETTINGS.semesters.sem1Start,
-        sem1End: parsed.semesters?.sem1End || DEFAULT_SETTINGS.semesters.sem1End,
-        sem2Start: parsed.semesters?.sem2Start || DEFAULT_SETTINGS.semesters.sem2Start,
-        sem2End: parsed.semesters?.sem2End || DEFAULT_SETTINGS.semesters.sem2End
-      };
-
-      const absenceWarningThreshold = (typeof parsed.absenceWarningThreshold === 'number' && !isNaN(parsed.absenceWarningThreshold))
-        ? Math.max(10, Math.min(100, parsed.absenceWarningThreshold))
-        : DEFAULT_SETTINGS.absenceWarningThreshold;
-
-      const minGradesForAttestation = (typeof parsed.minGradesForAttestation === 'number' && !isNaN(parsed.minGradesForAttestation))
-        ? Math.max(1, Math.min(20, Math.round(parsed.minGradesForAttestation)))
-        : DEFAULT_SETTINGS.minGradesForAttestation;
-
-      return {
-        configVersion: parsed.configVersion || CONFIG_VERSION,
-        semesters,
-        holidays: Array.isArray(parsed.holidays) ? parsed.holidays : [...DEFAULT_SETTINGS.holidays],
-        subjects: Array.isArray(parsed.subjects) && parsed.subjects.length > 0 ? parsed.subjects : [...DEFAULT_SETTINGS.subjects],
-        schedule: sanitizeSchedule(parsed.schedule),
-        diaryRecords: parsed.diaryRecords && typeof parsed.diaryRecords === 'object' ? parsed.diaryRecords : {},
-        dayNotes: parsed.dayNotes && typeof parsed.dayNotes === 'object' ? parsed.dayNotes : {},
-        absenceWarningThreshold,
-        minGradesForAttestation,
-        customHolidays: (parsed.customHolidays && typeof parsed.customHolidays === 'object') ? parsed.customHolidays : {}
-      };
+      const loaded = sanitizeLoadedState(parsed);
+      if (!localStorage.getItem(LAST_UPDATED_KEY)) {
+        try {
+          localStorage.setItem(LAST_UPDATED_KEY, loaded.lastUpdated);
+        } catch (_) {}
+      }
+      return loaded;
     } catch (e) {
       console.error('Ошибка чтения данных из localStorage:', e);
       return JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
@@ -237,10 +273,14 @@
 
   function saveSettings(showNotification = false) {
     try {
+      const nowISO = new Date().toISOString();
+      state.lastUpdated = nowISO;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(LAST_UPDATED_KEY, nowISO);
       if (showNotification) {
         showToast('Настройки сохранены', 'success');
       }
+      triggerCloudSyncDebounced();
     } catch (e) {
       console.error('Ошибка сохранения в localStorage:', e);
       showToast('Не удалось сохранить настройки в браузере', 'error');
@@ -293,6 +333,16 @@
         }
       });
     });
+
+    switchTab = function(tabId) {
+      activateTab(tabId);
+      localStorage.setItem(ACTIVE_TAB_KEY, tabId);
+      if (tabId === 'diary') {
+        renderDiaryWeek();
+      } else if (tabId === 'stats') {
+        renderStats();
+      }
+    };
 
     function activateTab(tabId) {
       tabButtons.forEach(btn => {
@@ -2030,46 +2080,9 @@
             throw new Error('Файл не содержит валидный JSON объект');
           }
 
-          state = {
-            configVersion: imported.configVersion || CONFIG_VERSION,
-            semesters: {
-              sem1Start: imported.semesters?.sem1Start || DEFAULT_SETTINGS.semesters.sem1Start,
-              sem1End: imported.semesters?.sem1End || DEFAULT_SETTINGS.semesters.sem1End,
-              sem2Start: imported.semesters?.sem2Start || DEFAULT_SETTINGS.semesters.sem2Start,
-              sem2End: imported.semesters?.sem2End || DEFAULT_SETTINGS.semesters.sem2End
-            },
-            holidays: Array.isArray(imported.holidays) ? imported.holidays : [],
-            subjects: Array.isArray(imported.subjects) && imported.subjects.length > 0
-              ? imported.subjects
-              : [...DEFAULT_SUBJECTS],
-            schedule: sanitizeSchedule(imported.schedule),
-            diaryRecords: imported.diaryRecords && typeof imported.diaryRecords === 'object'
-              ? imported.diaryRecords
-              : {},
-            dayNotes: imported.dayNotes && typeof imported.dayNotes === 'object'
-              ? imported.dayNotes
-              : {},
-            absenceWarningThreshold: (typeof imported.absenceWarningThreshold === 'number' && !isNaN(imported.absenceWarningThreshold))
-              ? Math.max(10, Math.min(100, imported.absenceWarningThreshold))
-              : DEFAULT_SETTINGS.absenceWarningThreshold,
-            minGradesForAttestation: (typeof imported.minGradesForAttestation === 'number' && !isNaN(imported.minGradesForAttestation))
-              ? Math.max(1, Math.min(20, Math.round(imported.minGradesForAttestation)))
-              : DEFAULT_SETTINGS.minGradesForAttestation,
-            customHolidays: (imported.customHolidays && typeof imported.customHolidays === 'object')
-              ? imported.customHolidays
-              : {}
-          };
-
+          state = sanitizeLoadedState(imported);
           saveSettings();
-
-          initSemesterDates();
-          initAbsenceThresholdSetting();
-          initMinGradesSetting();
-          renderHolidaysList();
-          renderSubjectsTags();
-          refreshAllDaySelects();
-          renderDiaryWeek();
-          renderStats();
+          refreshWholeUI();
 
           showToast('Настройки, расписание и оценки успешно загружены!', 'success');
         } catch (err) {
@@ -2088,15 +2101,7 @@
       if (confirmed) {
         state = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
         saveSettings();
-
-        initSemesterDates();
-        initAbsenceThresholdSetting();
-        initMinGradesSetting();
-        renderHolidaysList();
-        renderSubjectsTags();
-        refreshAllDaySelects();
-        renderDiaryWeek();
-        renderStats();
+        refreshWholeUI();
 
         showToast('Все данные сброшены к базовым значениям', 'info');
       }
@@ -2117,6 +2122,419 @@
     downloadAnchor.remove();
 
     showToast(`Файл «${fileName}» скачан`, 'success');
+  }
+
+  /* ==========================================================================
+     Облачная синхронизация (Supabase REST API)
+     ========================================================================== */
+  let cloudSyncDebounceTimer = null;
+  let currentSyncStatus = { type: 'disabled', detail: '' };
+
+  function getSyncId() {
+    return (localStorage.getItem(SYNC_STORAGE_KEY) || '').trim();
+  }
+
+  function setSyncId(id) {
+    if (id && typeof id === 'string' && id.trim()) {
+      localStorage.setItem(SYNC_STORAGE_KEY, id.trim());
+    } else {
+      localStorage.removeItem(SYNC_STORAGE_KEY);
+    }
+  }
+
+  function formatSyncTime(dateInput) {
+    const d = dateInput ? new Date(dateInput) : new Date();
+    if (isNaN(d.getTime())) return '';
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  }
+
+  function updateSyncStatus(statusType, detail = '') {
+    currentSyncStatus = { type: statusType, detail };
+    const headerBadge = document.getElementById('header-sync-badge');
+    const settingsBadge = document.getElementById('settings-sync-status');
+
+    let text = '';
+    let className = 'sync-status-badge ';
+
+    switch (statusType) {
+      case 'synced':
+        text = `☁ Синхронизировано (${detail || formatSyncTime(new Date())})`;
+        className += 'sync-status-synced';
+        break;
+      case 'saving':
+        text = '🔄 Сохранение...';
+        className += 'sync-status-saving';
+        break;
+      case 'error':
+        text = '⚠ Ошибка сети (работает локально)';
+        className += 'sync-status-error';
+        break;
+      case 'disabled':
+      default:
+        text = '☁ Облако отключено';
+        className += 'sync-status-disabled';
+        break;
+    }
+
+    if (headerBadge) {
+      headerBadge.className = className;
+      headerBadge.textContent = text;
+    }
+    if (settingsBadge) {
+      settingsBadge.className = className;
+      settingsBadge.textContent = text;
+    }
+  }
+
+  function triggerCloudSyncDebounced() {
+    const syncId = getSyncId();
+    if (!syncId) return;
+
+    updateSyncStatus('saving');
+
+    if (cloudSyncDebounceTimer) {
+      clearTimeout(cloudSyncDebounceTimer);
+    }
+
+    cloudSyncDebounceTimer = setTimeout(async () => {
+      await pushToCloud();
+    }, 800);
+  }
+
+  async function pushToCloud() {
+    const syncId = getSyncId();
+    if (!syncId) {
+      updateSyncStatus('disabled');
+      return false;
+    }
+
+    updateSyncStatus('saving');
+    const nowISO = new Date().toISOString();
+    state.lastUpdated = nowISO;
+    try {
+      localStorage.setItem(LAST_UPDATED_KEY, nowISO);
+    } catch (_) {}
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/${SYNC_TABLE}`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({
+          sync_id: syncId,
+          payload: state,
+          updated_at: nowISO
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error ${res.status}`);
+      }
+
+      const timeStr = formatSyncTime(nowISO);
+      updateSyncStatus('synced', timeStr);
+      return true;
+    } catch (err) {
+      console.warn('Ошибка облачной синхронизации (сохранено локально):', err);
+      updateSyncStatus('error');
+      return false;
+    }
+  }
+
+  async function pullFromCloud(silent = true) {
+    const syncId = getSyncId();
+    if (!syncId) {
+      updateSyncStatus('disabled');
+      return { success: false, reason: 'no_sync_id' };
+    }
+
+    updateSyncStatus('saving');
+
+    try {
+      const url = `${SUPABASE_URL}/rest/v1/${SYNC_TABLE}?sync_id=eq.${encodeURIComponent(syncId)}&select=*`;
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        }
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error ${res.status}`);
+      }
+
+      const rows = await res.json();
+      if (Array.isArray(rows) && rows.length > 0 && rows[0]) {
+        const record = rows[0];
+        const cloudDate = record.updated_at ? new Date(record.updated_at).getTime() : 0;
+        const localLastUpdated = localStorage.getItem(LAST_UPDATED_KEY) || state.lastUpdated || '1970-01-01T00:00:00.000Z';
+        const localDate = new Date(localLastUpdated).getTime();
+
+        if (cloudDate > localDate && record.payload) {
+          const sanitized = sanitizeLoadedState(record.payload);
+          if (sanitized) {
+            state = sanitized;
+            state.lastUpdated = record.updated_at;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            localStorage.setItem(LAST_UPDATED_KEY, record.updated_at);
+
+            refreshWholeUI();
+
+            if (!silent) {
+              showToast('Данные синхронизированы из облака', 'success');
+            }
+          }
+        } else if (localDate > cloudDate) {
+          // Локальные данные новее — отправляем их в облако
+          await pushToCloud();
+          return { success: true, record, pushed: true };
+        }
+
+        const syncTime = formatSyncTime(record.updated_at || new Date());
+        updateSyncStatus('synced', syncTime);
+        return { success: true, record };
+      } else {
+        // Записи в облаке еще нет — инициализируем текущими данными
+        await pushToCloud();
+        return { success: true, notFound: true };
+      }
+    } catch (err) {
+      console.warn('Ошибка загрузки из облака (работает локально):', err);
+      updateSyncStatus('error');
+      return { success: false, error: err };
+    }
+  }
+
+  function refreshWholeUI() {
+    updateSettingsInputs();
+    renderHolidaysList();
+    renderSubjectsTags();
+    refreshAllDaySelects();
+    renderDiaryWeek();
+    renderStats();
+  }
+
+  function updateSettingsInputs() {
+    const sem1Start = document.getElementById('sem1-start');
+    const sem1End = document.getElementById('sem1-end');
+    const sem2Start = document.getElementById('sem2-start');
+    const sem2End = document.getElementById('sem2-end');
+    if (sem1Start) sem1Start.value = state.semesters.sem1Start || '';
+    if (sem1End) sem1End.value = state.semesters.sem1End || '';
+    if (sem2Start) sem2Start.value = state.semesters.sem2Start || '';
+    if (sem2End) sem2End.value = state.semesters.sem2End || '';
+
+    const absenceInput = document.getElementById('absence-threshold-input');
+    if (absenceInput) absenceInput.value = state.absenceWarningThreshold;
+
+    const minGradesInput = document.getElementById('min-grades-input');
+    if (minGradesInput) minGradesInput.value = state.minGradesForAttestation;
+  }
+
+  function generateSyncId() {
+    const part1 = Math.random().toString(36).substring(2, 7);
+    const part2 = Math.random().toString(36).substring(2, 7);
+    return `diary-${part1}-${part2}`;
+  }
+
+  function updateSyncUI() {
+    const syncId = getSyncId();
+    const input = document.getElementById('sync-id-input');
+    const copyBtn = document.getElementById('sync-copy-btn');
+    const disconnectBtn = document.getElementById('sync-disconnect-btn');
+
+    if (input) {
+      input.value = syncId;
+    }
+    if (copyBtn) {
+      copyBtn.style.display = syncId ? 'inline-flex' : 'none';
+    }
+    if (disconnectBtn) {
+      disconnectBtn.disabled = !syncId;
+      disconnectBtn.style.opacity = syncId ? '1' : '0.5';
+    }
+  }
+
+  async function handleConnectSync() {
+    const input = document.getElementById('sync-id-input');
+    if (!input) return;
+    const syncId = input.value.trim();
+    if (!syncId) {
+      showToast('Введите или сгенерируйте ключ синхронизации', 'error');
+      input.focus();
+      return;
+    }
+
+    updateSyncStatus('saving');
+
+    try {
+      // 1. Сначала делаем GET запрос, чтобы проверить наличие данных в облаке
+      const url = `${SUPABASE_URL}/rest/v1/${SYNC_TABLE}?sync_id=eq.${encodeURIComponent(syncId)}&select=*`;
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        }
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error ${res.status}`);
+      }
+
+      const rows = await res.json();
+      setSyncId(syncId);
+
+      if (Array.isArray(rows) && rows.length > 0 && rows[0] && rows[0].payload) {
+        const record = rows[0];
+        const sanitized = sanitizeLoadedState(record.payload);
+        if (sanitized) {
+          state = sanitized;
+          state.lastUpdated = record.updated_at || new Date().toISOString();
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          localStorage.setItem(LAST_UPDATED_KEY, state.lastUpdated);
+
+          refreshWholeUI();
+
+          const syncTime = formatSyncTime(record.updated_at || new Date());
+          updateSyncStatus('synced', syncTime);
+          showToast('Ключ подключен! Данные успешно загружены из облака', 'success');
+          updateSyncUI();
+          return;
+        }
+      }
+
+      // Если в облаке еще нет данных (новый ключ) — отправляем локальный стейт
+      await pushToCloud();
+      showToast('Ключ подключен! Данные сохранены в облако', 'success');
+      updateSyncUI();
+    } catch (err) {
+      console.warn('Ошибка подключения к облаку:', err);
+      setSyncId(syncId);
+      updateSyncStatus('error');
+      showToast('Ключ сохранен, но сервер временно недоступен (работает локально)', 'info');
+      updateSyncUI();
+    }
+  }
+
+  function handleDisconnectSync() {
+    const currentId = getSyncId();
+    if (!currentId) {
+      showToast('Облачная синхронизация не подключена', 'info');
+      return;
+    }
+
+    const confirmed = confirm('Отключить облачную синхронизацию? Все данные сохранятся в этом браузере.');
+    if (!confirmed) return;
+
+    if (cloudSyncDebounceTimer) {
+      clearTimeout(cloudSyncDebounceTimer);
+      cloudSyncDebounceTimer = null;
+    }
+
+    setSyncId('');
+    const input = document.getElementById('sync-id-input');
+    if (input) input.value = '';
+
+    updateSyncStatus('disabled');
+    updateSyncUI();
+    showToast('Облачная синхронизация отключена', 'info');
+  }
+
+  function handleGenerateSyncId() {
+    const newId = generateSyncId();
+    const input = document.getElementById('sync-id-input');
+    if (input) {
+      input.value = newId;
+      input.focus();
+    }
+    showToast('Новый ключ сгенерирован. Нажмите «Подключить и синхронизировать»', 'info');
+  }
+
+  async function handleCopySyncId() {
+    const syncId = getSyncId() || (document.getElementById('sync-id-input')?.value || '').trim();
+    if (!syncId) {
+      showToast('Ключ не задан', 'error');
+      return;
+    }
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(syncId);
+        showToast('Ключ скопирован в буфер обмена', 'success');
+      } else {
+        const input = document.getElementById('sync-id-input');
+        if (input) {
+          input.select();
+          document.execCommand('copy');
+          showToast('Ключ скопирован в буфер обмена', 'success');
+        }
+      }
+    } catch (_) {
+      showToast('Выделите и скопируйте ключ вручную', 'info');
+    }
+  }
+
+  function initCloudSync() {
+    const connectBtn = document.getElementById('sync-connect-btn');
+    const disconnectBtn = document.getElementById('sync-disconnect-btn');
+    const generateBtn = document.getElementById('sync-generate-btn');
+    const copyBtn = document.getElementById('sync-copy-btn');
+    const input = document.getElementById('sync-id-input');
+    const headerStatus = document.getElementById('header-sync-status');
+
+    if (connectBtn) connectBtn.addEventListener('click', handleConnectSync);
+    if (disconnectBtn) disconnectBtn.addEventListener('click', handleDisconnectSync);
+    if (generateBtn) generateBtn.addEventListener('click', handleGenerateSyncId);
+    if (copyBtn) copyBtn.addEventListener('click', handleCopySyncId);
+
+    if (input) {
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleConnectSync();
+        }
+      });
+    }
+
+    if (headerStatus) {
+      headerStatus.addEventListener('click', () => {
+        if (typeof switchTab === 'function') {
+          switchTab('settings');
+        }
+        const syncCard = document.querySelector('.sync-card');
+        if (syncCard) {
+          syncCard.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    }
+
+    window.addEventListener('online', () => {
+      if (getSyncId()) {
+        pushToCloud();
+      }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && getSyncId()) {
+        pullFromCloud(true);
+      }
+    });
+
+    updateSyncUI();
+
+    // Проверяем облако при загрузке, если задан sync_id
+    if (getSyncId()) {
+      pullFromCloud(true);
+    } else {
+      updateSyncStatus('disabled');
+    }
   }
 
   /* ==========================================================================

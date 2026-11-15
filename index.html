@@ -24,6 +24,13 @@
           </div>
         </div>
 
+        <!-- Индикатор статуса синхронизации в шапке -->
+        <div class="header-sync-status" id="header-sync-status" title="Облачная синхронизация (нажмите для перехода в настройки)">
+          <div class="sync-status-badge sync-status-disabled" id="header-sync-badge">
+            ☁ Облако отключено
+          </div>
+        </div>
+
         <!-- Переключатель вкладок -->
         <nav class="nav-tabs" aria-label="Вкладки">
           <button class="tab-btn active" data-tab="diary">
@@ -233,6 +240,70 @@
       <!-- 3. Вкладка: Настройки (полнофункциональная) -->
       <section id="tab-settings" class="tab-pane active" aria-labelledby="tab-settings">
         <div class="settings-container">
+          
+          <!-- Облачная синхронизация (ПК ↔ Телефон) -->
+          <div class="card settings-card sync-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="badge badge-accent">Облако</span>
+                <h2>Облачная синхронизация (ПК ↔ Телефон)</h2>
+              </div>
+              <div class="sync-status-badge sync-status-disabled" id="settings-sync-status">
+                ☁ Облако отключено
+              </div>
+            </div>
+            
+            <div class="card-body">
+              <p class="card-description">Мгновенная синхронизация всех настроек, оценок, посещаемости, заметок к дням и разовых выходных между компьютером и телефоном.</p>
+
+              <div class="sync-form-row">
+                <div class="form-group">
+                  <label for="sync-id-input">Личный ключ синхронизации (Sync ID):</label>
+                  <div class="sync-input-group">
+                    <input type="text" id="sync-id-input" class="input-control sync-input" placeholder="Введите или сгенерируйте ключ" autocomplete="off" spellcheck="false">
+                    <button type="button" id="sync-generate-btn" class="btn btn-secondary" title="Сгенерировать случайный ключ">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                      </svg>
+                      Сгенерировать ключ
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="sync-actions-row">
+                <button type="button" id="sync-connect-btn" class="btn btn-primary">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                  </svg>
+                  Подключить и синхронизировать
+                </button>
+
+                <button type="button" id="sync-disconnect-btn" class="btn btn-danger">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                  Отключить облако
+                </button>
+
+                <button type="button" id="sync-copy-btn" class="btn btn-secondary" title="Скопировать ключ для ввода на телефоне">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  Копировать ключ
+                </button>
+              </div>
+
+              <div class="sync-hint" id="sync-hint">
+                💡 <strong>Как подключить смартфон:</strong> нажмите «Сгенерировать ключ» и «Подключить и синхронизировать» на ПК. Затем скопируйте ключ, откройте дневник на телефоне, вставьте ключ в это же поле и нажмите «Подключить и синхронизировать».
+              </div>
+            </div>
+          </div>
           
           <!-- Блок 1: Даты семестров -->
           <div class="card settings-card">

@@ -751,6 +751,110 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 }
 
 /* ==========================================================================
+   Облачная синхронизация (Supabase)
+   ========================================================================== */
+.sync-card {
+  border-left: 3px solid var(--accent);
+}
+
+.sync-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.3;
+  transition: var(--transition);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.sync-status-synced {
+  background-color: var(--success-soft);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.sync-status-saving {
+  background-color: var(--accent-soft);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  animation: pulse-saving 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse-saving {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+
+.sync-status-error {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.sync-status-disabled {
+  background-color: var(--bg-card-subtle);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+}
+
+.header-sync-status {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  transition: var(--transition);
+  margin-left: auto;
+}
+
+.header-sync-status:hover .sync-status-badge {
+  filter: brightness(1.2);
+  transform: translateY(-1px);
+}
+
+.sync-form-row {
+  margin-bottom: 16px;
+}
+
+.sync-input-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.sync-input-group .sync-input {
+  flex: 1;
+  font-family: monospace;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+}
+
+.sync-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.sync-hint {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background-color: var(--bg-card-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.sync-hint strong {
+  color: var(--text-primary);
+}
+
+/* ==========================================================================
    Вкладка: Дневник
    ========================================================================== */
 .diary-container {
@@ -2148,6 +2252,25 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 
   .backup-actions .btn {
     width: 100%;
+  }
+
+  .header-sync-status {
+    margin-left: 0;
+    align-self: flex-start;
+  }
+
+  .sync-input-group {
+    flex-direction: column;
+  }
+
+  .sync-actions-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sync-actions-row .btn {
+    width: 100%;
+    justify-content: center;
   }
 
   /* Адаптив вкладки Дневник */
