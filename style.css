@@ -1249,6 +1249,17 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   background-color: rgba(244, 63, 94, 0.15);
 }
 
+.diary-window-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  background-color: var(--bg-hover);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  margin-bottom: 4px;
+  text-align: center;
+}
+
 /* ==========================================================================
    Вкладка: Статистика
    ========================================================================== */

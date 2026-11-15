@@ -11,6 +11,9 @@
   const STORAGE_KEY = 'school_diary_10_settings_v1';
   const ACTIVE_TAB_KEY = 'school_diary_active_tab';
 
+  // Текущая версия схемы конфигурации по умолчанию
+  const CONFIG_VERSION = 2;
+
   // Дни недели для семестрового расписания (Понедельник - Суббота)
   const WEEK_DAYS = [
     { key: 'monday', name: 'Понедельник', shortName: 'Пн' },
@@ -27,47 +30,109 @@
     'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
   ];
 
-  // Базовые предметы по умолчанию
+  // Базовые предметы по умолчанию (10 класс)
   const DEFAULT_SUBJECTS = [
+    'Алгебра',
+    'Биология',
+    'Вероятность и статистика',
+    'География',
+    'Геометрия',
+    'Иностранный язык',
+    'Информатика',
     'История',
-    'Обществознание',
-    'Русский язык',
-    'Математика',
-    'Английский язык',
+    'Классный час',
     'Литература',
-    'Физкультура'
+    'ОБЗР',
+    'Обществознание',
+    'Право',
+    'Проект',
+    'Разговоры о важном',
+    'Русский язык',
+    'Физика',
+    'Физкультура',
+    'Химия',
+    'Электив по русскому языку'
   ];
 
-  // Начальное состояние приложения с предзаполненными семестрами и шаблоном
+  // Начальное состояние приложения с предзаполненными семестрами, каникулами и шаблоном
   const DEFAULT_SETTINGS = {
+    configVersion: CONFIG_VERSION,
     semesters: {
       sem1Start: '2026-09-01',
-      sem1End: '2026-12-29',
+      sem1End: '2026-12-30',
       sem2Start: '2027-01-11',
-      sem2End: '2027-05-29'
+      sem2End: '2027-05-28'
     },
     holidays: [
       {
-        id: 'default-autumn',
+        id: 'holiday-autumn',
         title: 'Осенние каникулы',
         start: '2026-10-26',
-        end: '2026-11-03'
+        end: '2026-11-04'
       },
       {
-        id: 'default-winter',
+        id: 'holiday-winter',
         title: 'Зимние каникулы',
-        start: '2026-12-30',
+        start: '2026-12-31',
         end: '2027-01-10'
+      },
+      {
+        id: 'holiday-spring',
+        title: 'Весенние каникулы',
+        start: '2027-03-27',
+        end: '2027-04-04'
       }
     ],
     subjects: [...DEFAULT_SUBJECTS],
     schedule: {
-      monday: ['Русский язык', 'Литература', 'Математика', 'История'],
-      tuesday: ['Математика', 'Английский язык', 'Обществознание', 'Физкультура'],
-      wednesday: ['История', 'Русский язык', 'Математика', 'Литература'],
-      thursday: ['Английский язык', 'Обществознание', 'Математика', 'Физкультура'],
-      friday: ['Русский язык', 'Литература', 'История', 'Обществознание'],
-      saturday: ['Математика', 'Английский язык']
+      monday: [
+        'ОБЗР',
+        'Обществознание',
+        'Алгебра',
+        'История',
+        'Проект',
+        'Право',
+        'Физика',
+        'Разговоры о важном'
+      ],
+      tuesday: [
+        'Иностранный язык',
+        'Русский язык',
+        'Литература',
+        'Алгебра',
+        'География',
+        'Геометрия',
+        'Обществознание'
+      ],
+      wednesday: [
+        'Русский язык',
+        'Физика',
+        'Литература',
+        'Биология',
+        'Алгебра',
+        'Литература',
+        'Иностранный язык'
+      ],
+      thursday: [
+        '',
+        'Физкультура',
+        'Обществознание',
+        'Информатика',
+        'История',
+        'Алгебра',
+        'Электив по русскому языку',
+        'Классный час'
+      ],
+      friday: [
+        'Иностранный язык',
+        'Химия',
+        'Обществознание',
+        'Геометрия',
+        'Физкультура',
+        'Геометрия',
+        'Вероятность и статистика'
+      ],
+      saturday: []
     },
     diaryRecords: {}
   };
@@ -97,7 +162,7 @@
   });
 
   /* ==========================================================================
-     Хранилище (localStorage)
+     Хранилище (localStorage) и версионирование настроек
      ========================================================================== */
   function loadSettings() {
     try {
@@ -107,6 +172,18 @@
       }
       const parsed = JSON.parse(raw);
       
+      // Миграция со старой версии (демо-данные версии 1):
+      // Если configVersion < 2 или не задана, подтягиваем новое расписание, каникулы и предметы,
+      // сохраняя уже выставленные оценки и историю в diaryRecords.
+      if (!parsed.configVersion || parsed.configVersion < CONFIG_VERSION) {
+        const upgraded = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+        if (parsed.diaryRecords && typeof parsed.diaryRecords === 'object') {
+          upgraded.diaryRecords = parsed.diaryRecords;
+        }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(upgraded));
+        return upgraded;
+      }
+
       const semesters = {
         sem1Start: parsed.semesters?.sem1Start || DEFAULT_SETTINGS.semesters.sem1Start,
         sem1End: parsed.semesters?.sem1End || DEFAULT_SETTINGS.semesters.sem1End,
@@ -115,6 +192,7 @@
       };
 
       return {
+        configVersion: parsed.configVersion || CONFIG_VERSION,
         semesters,
         holidays: Array.isArray(parsed.holidays) ? parsed.holidays : [...DEFAULT_SETTINGS.holidays],
         subjects: Array.isArray(parsed.subjects) && parsed.subjects.length > 0 ? parsed.subjects : [...DEFAULT_SETTINGS.subjects],
@@ -354,17 +432,25 @@
       }
     }
 
+    const templateLessons = state.schedule[dayInfo.key] || [];
+    const savedDayRecords = state.diaryRecords[dateStr] || {};
+    const activeTemplateLessons = templateLessons.filter(s => s && s.trim().length > 0);
+    const hasActiveLessons = activeTemplateLessons.length > 0;
+
     const formattedShortDate = formatDateShortRussian(dayDate);
     let statusBadgeHtml = '';
     if (dayStatus.isHoliday) {
       statusBadgeHtml = `<span class="badge-holiday-tag" title="Каникулы">Каникулы: ${escapeHtml(dayStatus.title)}</span>`;
     } else if (dayStatus.isOutsideSemester) {
       statusBadgeHtml = `<span class="badge-off-tag">Неучебный день</span>`;
+    } else if (!hasActiveLessons) {
+      statusBadgeHtml = `<span class="badge-off-tag">Выходной</span>`;
     }
 
     const todayBadgeHtml = isToday ? `<span class="badge-today">Сегодня</span>` : '';
 
-    const bulkActionsHtml = `
+    // Кнопки массовых действий в шапке дня отображаются только при наличии уроков
+    const bulkActionsHtml = hasActiveLessons ? `
       <div class="day-bulk-actions">
         <button type="button" class="btn-bulk btn-bulk-unexcused" data-date="${dateStr}" data-day="${dayInfo.key}" title="Поставить «Н» (прогул) на все уроки дня">
           Н на весь день
@@ -376,7 +462,7 @@
           Сброс (Был)
         </button>
       </div>
-    `;
+    ` : '';
 
     card.innerHTML = `
       <div class="diary-day-header">
@@ -394,13 +480,15 @@
       </div>
     `;
 
-    const btnUnexcused = card.querySelector('.btn-bulk-unexcused');
-    const btnExcused = card.querySelector('.btn-bulk-excused');
-    const btnReset = card.querySelector('.btn-bulk-reset');
+    if (hasActiveLessons) {
+      const btnUnexcused = card.querySelector('.btn-bulk-unexcused');
+      const btnExcused = card.querySelector('.btn-bulk-excused');
+      const btnReset = card.querySelector('.btn-bulk-reset');
 
-    btnUnexcused.addEventListener('click', () => setDayBulkAttendance(dateStr, dayInfo.key, 'unexcused'));
-    btnExcused.addEventListener('click', () => setDayBulkAttendance(dateStr, dayInfo.key, 'excused'));
-    btnReset.addEventListener('click', () => setDayBulkAttendance(dateStr, dayInfo.key, 'was'));
+      if (btnUnexcused) btnUnexcused.addEventListener('click', () => setDayBulkAttendance(dateStr, dayInfo.key, 'unexcused'));
+      if (btnExcused) btnExcused.addEventListener('click', () => setDayBulkAttendance(dateStr, dayInfo.key, 'excused'));
+      if (btnReset) btnReset.addEventListener('click', () => setDayBulkAttendance(dateStr, dayInfo.key, 'was'));
+    }
 
     const bodyContainer = card.querySelector(`#day-body-${dateStr}`);
 
@@ -422,6 +510,7 @@
         <span>Каникулярный период: <strong>${escapeHtml(dayStatus.title)}</strong>. Занятия не проводятся.</span>
       `;
       bodyContainer.appendChild(notice);
+      return card;
     } else if (dayStatus.isOutsideSemester) {
       const notice = document.createElement('div');
       notice.className = 'holiday-notice';
@@ -435,28 +524,35 @@
         <span>Дата вне рамок учебных семестров.</span>
       `;
       bodyContainer.appendChild(notice);
+      return card;
     }
 
-    const templateLessons = state.schedule[dayInfo.key] || [];
-    const savedDayRecords = state.diaryRecords[dateStr] || {};
-    
+    // Если нет уроков по расписанию (например, в субботу при пятидневке)
+    if (!hasActiveLessons && dayStatus.isSchoolDay) {
+      const emptyNotice = document.createElement('div');
+      emptyNotice.className = 'empty-state';
+      emptyNotice.style.padding = '16px';
+      emptyNotice.style.fontSize = '0.88rem';
+      emptyNotice.textContent = dayInfo.key === 'saturday' ? 'Выходной день (уроков нет)' : 'Нет запланированных уроков в расписании недели';
+      bodyContainer.appendChild(emptyNotice);
+      return card;
+    }
+
     const maxIdx = Math.max(
       templateLessons.length,
       ...Object.keys(savedDayRecords).map(k => Number(k) + 1)
     );
 
-    if (maxIdx === 0 && dayStatus.isSchoolDay) {
-      const emptyNotice = document.createElement('div');
-      emptyNotice.className = 'empty-state';
-      emptyNotice.style.padding = '14px';
-      emptyNotice.style.fontSize = '0.85rem';
-      emptyNotice.textContent = 'Нет запланированных уроков в расписании недели';
-      bodyContainer.appendChild(emptyNotice);
-      return card;
-    }
-
     const lessonsList = document.createElement('div');
     lessonsList.className = 'diary-lessons-list';
+
+    // Подсказка, если 1-й урок отсутствует (приход ко 2-му уроку, как в четверг)
+    if (templateLessons[0] === '' && hasActiveLessons) {
+      const windowHint = document.createElement('div');
+      windowHint.className = 'diary-window-hint';
+      windowHint.textContent = '1-й урок отсутствует (приход ко 2-му уроку)';
+      lessonsList.appendChild(windowHint);
+    }
 
     for (let i = 0; i < maxIdx; i++) {
       const templateSubj = templateLessons[i] || '';
@@ -467,6 +563,12 @@
       };
 
       const subjectName = templateSubj || lessonRecord.subject || '';
+
+      // Если в шаблоне урок пуст (окно) и нет выставленных оценок/пропусков, не создаем лишнюю строку
+      if (!subjectName && (!lessonRecord.marks || lessonRecord.marks.length === 0) && lessonRecord.attendance === 'was') {
+        continue;
+      }
+
       const lessonRow = createDiaryLessonRow(dateStr, i, subjectName, lessonRecord);
       lessonsList.appendChild(lessonRow);
     }
@@ -642,7 +744,8 @@
 
   function setDayBulkAttendance(dateStr, dayKey, status) {
     const templateLessons = state.schedule[dayKey] || [];
-    if (templateLessons.length === 0) {
+    const activeLessons = templateLessons.filter(s => s && s.trim().length > 0);
+    if (activeLessons.length === 0) {
       showToast('В расписании на этот день нет уроков', 'info');
       return;
     }
@@ -650,6 +753,9 @@
     state.diaryRecords[dateStr] = state.diaryRecords[dateStr] || {};
 
     templateLessons.forEach((subj, idx) => {
+      // Пропускаем пустые уроки (окна, например 1-й урок в четверг)
+      if (!subj || !subj.trim()) return;
+
       state.diaryRecords[dateStr][idx] = state.diaryRecords[dateStr][idx] || {
         attendance: 'was',
         marks: [],
@@ -657,19 +763,18 @@
       };
 
       state.diaryRecords[dateStr][idx].attendance = status;
-      if (subj) {
-        state.diaryRecords[dateStr][idx].subject = subj;
-      }
+      state.diaryRecords[dateStr][idx].subject = subj;
     });
 
     saveSettings();
     renderDiaryWeek();
+    renderStats();
 
     const dayObj = WEEK_DAYS.find(d => d.key === dayKey);
     const dayName = dayObj ? dayObj.name : 'День';
     const statusText = status === 'unexcused'
-      ? 'прогул (Н) на весь день'
-      : (status === 'excused' ? 'уважительная причина (У) на весь день' : '«Был» для всех уроков');
+      ? 'прогул (Н) на все уроки дня'
+      : (status === 'excused' ? 'уважительная причина (У) на все уроки дня' : '«Был» для всех уроков');
 
     showToast(`${dayName}: установлен статус ${statusText}`, 'success');
   }
@@ -702,16 +807,16 @@
 
   function calculateStatsData(period, mode) {
     let startStr = state.semesters.sem1Start || '2026-09-01';
-    let endStr = state.semesters.sem1End || '2026-12-29';
+    let endStr = state.semesters.sem1End || '2026-12-30';
     let periodName = '1-й семестр';
 
     if (period === 'sem2') {
       startStr = state.semesters.sem2Start || '2027-01-11';
-      endStr = state.semesters.sem2End || '2027-05-29';
+      endStr = state.semesters.sem2End || '2027-05-28';
       periodName = '2-й семестр';
     } else if (period === 'year') {
       startStr = state.semesters.sem1Start || '2026-09-01';
-      endStr = state.semesters.sem2End || '2027-05-29';
+      endStr = state.semesters.sem2End || '2027-05-28';
       periodName = 'Весь учебный год';
     }
 
@@ -1329,7 +1434,7 @@
       dayCard.innerHTML = `
         <div class="day-header">
           <span class="day-name">${day.name}</span>
-          <span class="day-count" id="count-${day.key}">Уроков: ${lessons.length}</span>
+          <span class="day-count" id="count-${day.key}">Уроков: ${lessons.filter(s => s && s.trim()).length}</span>
         </div>
         <div class="lessons-list" id="lessons-list-${day.key}">
         </div>
@@ -1355,15 +1460,16 @@
 
     listContainer.innerHTML = '';
     const lessons = state.schedule[dayKey] || [];
+    const activeCount = lessons.filter(s => s && s.trim()).length;
 
     if (countEl) {
-      countEl.textContent = `Уроков: ${lessons.length}`;
+      countEl.textContent = `Уроков: ${activeCount}`;
     }
 
     if (lessons.length === 0) {
       listContainer.innerHTML = `
         <div class="empty-state" style="padding: 12px; font-size: 0.8rem;">
-          Нет уроков в этот день
+          Нет уроков в этот день (выходной)
         </div>
       `;
       return;
@@ -1398,6 +1504,9 @@
         saveSettings();
         renderDiaryWeek();
         renderStats();
+        if (countEl) {
+          countEl.textContent = `Уроков: ${state.schedule[dayKey].filter(s => s && s.trim()).length}`;
+        }
       });
 
       const deleteBtn = lessonRow.querySelector('.btn-icon-only');
@@ -1464,6 +1573,7 @@
           }
 
           state = {
+            configVersion: imported.configVersion || CONFIG_VERSION,
             semesters: {
               sem1Start: imported.semesters?.sem1Start || DEFAULT_SETTINGS.semesters.sem1Start,
               sem1End: imported.semesters?.sem1End || DEFAULT_SETTINGS.semesters.sem1End,
@@ -1559,7 +1669,7 @@
 
   function getMonday(d) {
     const date = new Date(d);
-    const day = date.getDay();
+    const day = date.getDay(); // 0 - Вс, 1 - Пн ...
     const diff = date.getDate() - day + (day === 0 ? -6 : 1);
     return new Date(date.getFullYear(), date.getMonth(), diff);
   }
