@@ -1,0 +1,1912 @@
+/* ==========================================================================
+   Дневник успеваемости (10 класс) — style.css
+   Строгий минимализм, тёмная тема (#121212, #1e1e1e)
+   ========================================================================== */
+
+:root {
+  --bg-main: #121212;
+  --bg-card: #1e1e1e;
+  --bg-card-subtle: #181818;
+  --bg-hover: #262626;
+  --bg-input: #151515;
+
+  --border-subtle: #27272a;
+  --border-card: #2e2e32;
+  --border-focus: #6366f1;
+
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --accent-soft: rgba(99, 102, 241, 0.15);
+
+  --danger: #ef4444;
+  --danger-hover: #dc2626;
+  --danger-soft: rgba(239, 68, 68, 0.12);
+
+  --success: #10b981;
+  --success-soft: rgba(16, 185, 129, 0.15);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  --shadow-subtle: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+/* Сброс стилей и база */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* Общий контейнер */
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 16px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ==========================================================================
+   Шапка приложения и навигация
+   ========================================================================== */
+.header {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  padding: 18px 24px;
+  box-shadow: var(--shadow-subtle);
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.logo-text h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.subtitle {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  display: block;
+}
+
+/* Вкладки */
+.nav-tabs {
+  display: flex;
+  gap: 8px;
+  background-color: var(--bg-main);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: inherit;
+  user-select: none;
+}
+
+.tab-btn:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
+}
+
+.tab-btn.active {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.tab-icon {
+  width: 17px;
+  height: 17px;
+}
+
+/* ==========================================================================
+   Контентные панели
+   ========================================================================== */
+.main-content {
+  width: 100%;
+}
+
+.tab-pane {
+  display: none;
+  animation: fadeIn 0.25s ease;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Заглушки для вкладок «Дневник» и «Статистика» */
+.stub-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  padding: 60px 24px;
+  text-align: center;
+  max-width: 600px;
+  margin: 30px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.stub-icon-wrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: var(--bg-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+}
+
+.stub-icon-wrapper svg {
+  width: 32px;
+  height: 32px;
+}
+
+.stub-card h2 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.stub-card p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* ==========================================================================
+   Карточки настроек
+   ========================================================================== */
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-subtle);
+  transition: border-color 0.2s ease;
+}
+
+.card-header {
+  margin-bottom: 20px;
+}
+
+.card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.card-title-group h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.badge-accent {
+  background-color: var(--accent-soft);
+  color: #a5b4fc;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.card-description {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+.subheading {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ==========================================================================
+   Элементы форм (Input, Select, Button)
+   ========================================================================== */
+.input-control {
+  width: 100%;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 10px 12px;
+  font-size: 0.92rem;
+  font-family: inherit;
+  outline: none;
+  transition: var(--transition);
+}
+
+.input-control:hover {
+  border-color: #404040;
+}
+
+.input-control:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+/* Специфика для полей дат в темной теме */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.85);
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Кнопки */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: var(--transition);
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background-color: var(--accent);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-hover);
+}
+
+.btn-secondary {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-card);
+}
+
+.btn-secondary:hover {
+  background-color: #303030;
+  border-color: #444444;
+}
+
+.btn-danger {
+  background-color: transparent;
+  color: var(--danger);
+  border-color: var(--border-subtle);
+}
+
+.btn-danger:hover {
+  background-color: var(--danger-soft);
+  border-color: var(--danger);
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: var(--text-muted);
+  border-color: transparent;
+}
+
+.btn-ghost:hover {
+  color: var(--text-secondary);
+  text-decoration: underline;
+}
+
+.btn-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-icon-only {
+  padding: 7px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.btn-icon-only:hover {
+  color: var(--danger);
+  background-color: var(--danger-soft);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* ==========================================================================
+   Блок 1: Даты семестров
+   ========================================================================== */
+.semester-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.semester-box {
+  background-color: var(--bg-card-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.semester-header {
+  margin-bottom: 14px;
+}
+
+.semester-pill {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-card);
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ==========================================================================
+   Блок 2: Каникулы и праздники
+   ========================================================================== */
+.holiday-form {
+  background-color: var(--bg-card-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.holidays-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.holiday-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--bg-card-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  transition: var(--transition);
+}
+
+.holiday-item:hover {
+  border-color: #383838;
+}
+
+.holiday-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.holiday-title {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.holiday-dates {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  background-color: var(--bg-main);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+/* ==========================================================================
+   Блок 3: Расписание недели
+   ========================================================================== */
+.subjects-manager {
+  background-color: var(--bg-card-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.add-subject-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.subjects-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.subject-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+  border: 1px solid var(--border-card);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.86rem;
+  transition: var(--transition);
+}
+
+.subject-tag:hover {
+  border-color: #4a4a4a;
+}
+
+.subject-remove-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.subject-remove-btn:hover {
+  color: var(--danger);
+}
+
+/* Сетка дней недели */
+.week-schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 16px;
+}
+
+.day-card {
+  background-color: var(--bg-card-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.day-card:hover {
+  border-color: #383838;
+}
+
+.day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.day-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.day-count {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.lessons-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 50px;
+}
+
+.lesson-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lesson-number {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lesson-select {
+  flex-grow: 1;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 8px 10px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.lesson-select:focus {
+  border-color: var(--border-focus);
+}
+
+.lesson-select option {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.add-lesson-btn {
+  width: 100%;
+  margin-top: 4px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px dashed var(--border-subtle);
+  padding: 8px;
+  font-size: 0.84rem;
+}
+
+.add-lesson-btn:hover {
+  color: var(--text-primary);
+  border-color: #4f4f4f;
+  background-color: var(--bg-hover);
+}
+
+/* ==========================================================================
+   Блок 4: Резервная копия (Импорт / Экспорт)
+   ========================================================================== */
+.backup-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.file-input-hidden {
+  display: none;
+}
+
+.btn-file-label {
+  cursor: pointer;
+}
+
+.auto-save-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--success);
+  display: inline-block;
+}
+
+/* ==========================================================================
+   Вкладка: Дневник
+   ========================================================================== */
+.diary-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Панель навигации по неделям */
+.diary-nav-card {
+  padding: 16px 20px;
+}
+
+.diary-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.nav-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-nav {
+  padding: 8px 14px;
+  font-size: 0.88rem;
+}
+
+.btn-today {
+  padding: 8px 14px;
+  font-size: 0.88rem;
+  background-color: var(--accent-soft);
+  color: #c7d2fe;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.btn-today:hover {
+  background-color: rgba(99, 102, 241, 0.25);
+  color: #ffffff;
+}
+
+.diary-week-title {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.diary-week-title h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.week-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.week-sub-badge {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  background-color: var(--bg-hover);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+.week-status-badge {
+  font-size: 0.78rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.diary-jump-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.select-jump {
+  min-width: 170px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+}
+
+.input-jump-date {
+  width: auto;
+  min-width: 130px;
+  padding: 7px 10px;
+  font-size: 0.85rem;
+}
+
+/* Сетка карточек дней (Понедельник - Суббота) */
+.diary-week-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 18px;
+}
+
+.diary-day-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow-subtle);
+}
+
+.diary-day-card.is-today {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 4px 16px rgba(99, 102, 241, 0.15);
+}
+
+.diary-day-card.is-holiday {
+  background-color: rgba(30, 30, 30, 0.65);
+  border: 1px dashed #44444a;
+}
+
+.diary-day-card.is-non-school {
+  background-color: rgba(24, 24, 24, 0.55);
+  border: 1px dashed #333338;
+  opacity: 0.85;
+}
+
+/* Шапка карточки дня */
+.diary-day-header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.day-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.day-title-box {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.day-title-text {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.day-date-text {
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+}
+
+.badge-today {
+  background-color: var(--accent-soft);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge-holiday-tag {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+}
+
+.badge-off-tag {
+  background-color: var(--bg-hover);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
+/* Кнопки массовых действий в шапке дня */
+.day-bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.btn-bulk {
+  padding: 4px 9px;
+  border-radius: 4px;
+  font-size: 0.76rem;
+  font-weight: 500;
+  background-color: var(--bg-hover);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.btn-bulk:hover {
+  background-color: #333333;
+  color: var(--text-primary);
+}
+
+.btn-bulk-unexcused:hover {
+  background-color: var(--danger-soft);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.btn-bulk-excused:hover {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.btn-bulk-reset:hover {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+/* Содержимое дня (список уроков / баннер) */
+.diary-day-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.holiday-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  background-color: var(--bg-card-subtle);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.holiday-notice-icon {
+  width: 20px;
+  height: 20px;
+  color: #fbbf24;
+  flex-shrink: 0;
+}
+
+.diary-lessons-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Строка урока в карточке дня */
+.diary-lesson-item {
+  background-color: var(--bg-card-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.2s ease;
+}
+
+.diary-lesson-item:hover {
+  border-color: #3a3a40;
+}
+
+.diary-lesson-item.att-unexcused {
+  border-left: 3px solid var(--danger);
+  background-color: rgba(239, 68, 68, 0.04);
+}
+
+.diary-lesson-item.att-excused {
+  border-left: 3px solid #3b82f6;
+  background-color: rgba(59, 130, 246, 0.04);
+}
+
+.lesson-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lesson-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.lesson-number-circle {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lesson-subject-name {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lesson-empty-placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Переключатель посещаемости [Был | Н | У] */
+.attendance-segmented {
+  display: inline-flex;
+  background-color: var(--bg-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.att-btn {
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: inherit;
+}
+
+.att-btn:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
+}
+
+.att-btn.active.att-was {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.att-btn.active.att-unexcused {
+  background-color: var(--danger);
+  color: #ffffff;
+}
+
+.att-btn.active.att-excused {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+
+/* Секция оценок за урок */
+.lesson-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.marks-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-height: 24px;
+}
+
+.mark-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 2px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.15s, opacity 0.15s;
+  user-select: none;
+}
+
+.mark-badge:hover {
+  transform: scale(1.08);
+  opacity: 0.85;
+}
+
+.mark-del-x {
+  font-size: 0.9rem;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.mark-badge:hover .mark-del-x {
+  opacity: 1;
+}
+
+/* Цвета оценок */
+.mark-badge-5 {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.mark-badge-4 {
+  background-color: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.mark-badge-3 {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.mark-badge-2 {
+  background-color: rgba(244, 63, 94, 0.2);
+  color: #fb7185;
+  border: 1px solid rgba(244, 63, 94, 0.4);
+}
+
+/* Панель быстрого добавления оценки */
+.quick-marks-picker {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.picker-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-right: 2px;
+}
+
+.btn-add-mark {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background-color: var(--bg-hover);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: inherit;
+  padding: 0;
+}
+
+.btn-add-mark:hover {
+  background-color: #333333;
+}
+
+.btn-add-mark-5:hover {
+  color: #34d399;
+  border-color: #34d399;
+  background-color: rgba(16, 185, 129, 0.15);
+}
+
+.btn-add-mark-4:hover {
+  color: #38bdf8;
+  border-color: #38bdf8;
+  background-color: rgba(56, 189, 248, 0.15);
+}
+
+.btn-add-mark-3:hover {
+  color: #fbbf24;
+  border-color: #fbbf24;
+  background-color: rgba(245, 158, 11, 0.15);
+}
+
+.btn-add-mark-2:hover {
+  color: #fb7185;
+  border-color: #fb7185;
+  background-color: rgba(244, 63, 94, 0.15);
+}
+
+/* ==========================================================================
+   Вкладка: Статистика
+   ========================================================================== */
+.stats-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Панель фильтров */
+.stats-filter-card {
+  padding: 18px 20px;
+}
+
+.stats-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-group-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.segmented-control {
+  display: inline-flex;
+  background-color: var(--bg-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  gap: 3px;
+}
+
+.segment-btn {
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.segment-btn:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
+}
+
+.segment-btn.active {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  font-weight: 600;
+}
+
+.stats-period-info {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.stats-period-dates {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.stats-period-progress {
+  color: var(--text-muted);
+}
+
+/* Верхний дашборд: 4 карточки сводки */
+.stats-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+}
+
+.summary-card {
+  padding: 20px 22px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.summary-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.summary-card-title {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.summary-card-icon {
+  font-size: 1.15rem;
+}
+
+.summary-card-value {
+  font-size: 2.1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--text-primary);
+}
+
+.summary-card-sub {
+  font-size: 0.83rem;
+  color: var(--text-muted);
+}
+
+.summary-card-total {
+  border-left: 4px solid var(--accent);
+}
+
+.summary-card-danger {
+  border-left: 4px solid var(--danger);
+}
+
+.summary-card-info {
+  border-left: 4px solid #38bdf8;
+}
+
+.summary-card-warning {
+  border-left: 4px solid #fbbf24;
+}
+
+.text-danger {
+  color: #f87171 !important;
+}
+
+.text-info {
+  color: #38bdf8 !important;
+}
+
+.text-warning {
+  color: #fbbf24 !important;
+}
+
+.text-success {
+  color: #34d399 !important;
+}
+
+/* Сетка предметов */
+.stats-subjects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 18px;
+}
+
+.subject-stat-card {
+  background-color: var(--bg-card-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: var(--transition);
+}
+
+.subject-stat-card:hover {
+  border-color: #3f3f46;
+}
+
+.subject-stat-card.has-risk {
+  border-color: rgba(239, 68, 68, 0.4);
+  background-color: rgba(239, 68, 68, 0.02);
+}
+
+.subject-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.subject-name-box {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.subject-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.grade-badge-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.projected-grade-badge {
+  font-size: 0.88rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.projected-grade-5 {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.projected-grade-4 {
+  background-color: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.projected-grade-3 {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.projected-grade-2 {
+  background-color: rgba(244, 63, 94, 0.2);
+  color: #fb7185;
+  border: 1px solid rgba(244, 63, 94, 0.4);
+}
+
+.projected-grade-none {
+  background-color: var(--bg-hover);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+}
+
+.avg-score-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.avg-score-val {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Список оценок по предмету */
+.subject-marks-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.marks-row-header {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.subject-marks-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  min-height: 24px;
+}
+
+.no-marks-stub {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Умный калькулятор «До цели» */
+.smart-goal-box {
+  background-color: var(--bg-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.83rem;
+  line-height: 1.4;
+}
+
+.goal-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+.goal-text-content {
+  flex-grow: 1;
+}
+
+.goal-title {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.goal-needed {
+  color: var(--text-secondary);
+}
+
+.goal-highlight-5 {
+  color: #34d399;
+  font-weight: 700;
+}
+
+.goal-highlight-4 {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.goal-highlight-3 {
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+/* Посещаемость по предмету */
+.subject-att-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.att-metrics-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.att-progress-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background-color: var(--bg-main);
+  overflow: hidden;
+  display: flex;
+}
+
+.att-progress-unexcused {
+  background-color: var(--danger);
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.att-progress-excused {
+  background-color: #38bdf8;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.att-progress-present {
+  background-color: #27272a;
+  height: 100%;
+  flex-grow: 1;
+}
+
+/* Бейдж риска неаттестации */
+.risk-warning-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* ==========================================================================
+   Уведомления (Toast)
+   ========================================================================== */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.toast {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-card);
+  color: var(--text-primary);
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+  animation: slideUp 0.25s ease, fadeOut 0.3s ease 2.7s forwards;
+  max-width: 380px;
+}
+
+.toast-success {
+  border-left: 4px solid var(--success);
+}
+
+.toast-error {
+  border-left: 4px solid var(--danger);
+}
+
+.toast-info {
+  border-left: 4px solid var(--accent);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* ==========================================================================
+   Адаптивность (Mobile & Tablet)
+   ========================================================================== */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 12px 10px 40px;
+    gap: 16px;
+  }
+
+  .header {
+    padding: 14px 16px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .logo {
+    justify-content: flex-start;
+  }
+
+  .nav-tabs {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .tab-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 8px 10px;
+    font-size: 0.85rem;
+  }
+
+  .tab-btn span {
+    display: inline-block;
+  }
+
+  .card {
+    padding: 18px 14px;
+  }
+
+  .form-grid-3 {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .add-subject-form {
+    flex-direction: column;
+  }
+
+  .week-schedule-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .backup-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .backup-actions .btn {
+    width: 100%;
+  }
+
+  /* Адаптив вкладки Дневник */
+  .diary-nav-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .nav-btn-group {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .nav-btn-group .btn {
+    flex: 1;
+    padding: 8px 6px;
+    font-size: 0.8rem;
+  }
+
+  .nav-btn-text {
+    display: inline-block;
+  }
+
+  .diary-jump-tools {
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .select-jump, .input-jump-date {
+    width: 100%;
+  }
+
+  .diary-week-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .day-header-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .day-bulk-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .btn-bulk {
+    flex: 1;
+    text-align: center;
+  }
+
+  .lesson-bottom-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .quick-marks-picker {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  /* Адаптив вкладки Статистика */
+  .stats-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .filter-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .segmented-control {
+    width: 100%;
+    display: flex;
+  }
+
+  .segment-btn {
+    flex: 1;
+    text-align: center;
+    padding: 7px 6px;
+    font-size: 0.78rem;
+  }
+
+  .stats-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .summary-card {
+    padding: 14px 16px;
+  }
+
+  .summary-card-value {
+    font-size: 1.6rem;
+  }
+
+  .stats-subjects-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .subject-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .grade-badge-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .toast-container {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+  }
+
+  .toast {
+    max-width: 100%;
+  }
+}
