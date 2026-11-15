@@ -1261,6 +1261,159 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 }
 
 /* ==========================================================================
+   Заметки на день
+   ========================================================================== */
+.day-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-bulk-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  cursor: pointer;
+}
+
+.btn-bulk-note.has-note {
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.4);
+  background-color: rgba(245, 158, 11, 0.1);
+}
+
+.day-note-container {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.day-note-container:empty {
+  display: none;
+  margin: 0;
+}
+
+.day-note-view {
+  background-color: rgba(251, 191, 36, 0.04);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  border-left: 3px solid #fbbf24;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.day-note-view:hover {
+  border-color: rgba(251, 191, 36, 0.4);
+  background-color: rgba(251, 191, 36, 0.07);
+}
+
+.day-note-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.day-note-badge {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #fbbf24;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.day-note-btn-del {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.15rem;
+  line-height: 1;
+  padding: 0 4px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.day-note-btn-del:hover {
+  color: var(--danger);
+}
+
+.day-note-content {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.45;
+}
+
+.day-note-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background-color: var(--bg-hover);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  animation: fadeIn 0.2s ease;
+}
+
+.day-note-textarea {
+  width: 100%;
+  min-height: 52px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  padding: 8px 10px;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.day-note-textarea:focus {
+  border-color: var(--accent);
+}
+
+.day-note-edit-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+
+.day-note-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.btn-note-done {
+  padding: 4px 12px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background-color: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-note-done:hover {
+  background-color: var(--accent-hover);
+}
+
+/* ==========================================================================
    Вкладка: Статистика
    ========================================================================== */
 .stats-container {

@@ -134,7 +134,8 @@
       ],
       saturday: []
     },
-    diaryRecords: {}
+    diaryRecords: {},
+    dayNotes: {}
   };
 
   // Рабочее состояние приложения
@@ -174,11 +175,14 @@
       
       // Миграция со старой версии (демо-данные версии 1):
       // Если configVersion < 2 или не задана, подтягиваем новое расписание, каникулы и предметы,
-      // сохраняя уже выставленные оценки и историю в diaryRecords.
+      // сохраняя уже выставленные оценки, историю в diaryRecords и заметки в dayNotes.
       if (!parsed.configVersion || parsed.configVersion < CONFIG_VERSION) {
         const upgraded = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
         if (parsed.diaryRecords && typeof parsed.diaryRecords === 'object') {
           upgraded.diaryRecords = parsed.diaryRecords;
+        }
+        if (parsed.dayNotes && typeof parsed.dayNotes === 'object') {
+          upgraded.dayNotes = parsed.dayNotes;
         }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(upgraded));
         return upgraded;
@@ -197,7 +201,8 @@
         holidays: Array.isArray(parsed.holidays) ? parsed.holidays : [...DEFAULT_SETTINGS.holidays],
         subjects: Array.isArray(parsed.subjects) && parsed.subjects.length > 0 ? parsed.subjects : [...DEFAULT_SETTINGS.subjects],
         schedule: sanitizeSchedule(parsed.schedule),
-        diaryRecords: parsed.diaryRecords && typeof parsed.diaryRecords === 'object' ? parsed.diaryRecords : {}
+        diaryRecords: parsed.diaryRecords && typeof parsed.diaryRecords === 'object' ? parsed.diaryRecords : {},
+        dayNotes: parsed.dayNotes && typeof parsed.dayNotes === 'object' ? parsed.dayNotes : {}
       };
     } catch (e) {
       console.error('Ошибка чтения данных из localStorage:', e);
@@ -464,6 +469,8 @@
       </div>
     ` : '';
 
+    const hasNote = Boolean(state.dayNotes && state.dayNotes[dateStr] && state.dayNotes[dateStr].trim());
+
     card.innerHTML = `
       <div class="diary-day-header">
         <div class="day-header-top">
@@ -474,7 +481,13 @@
           </div>
           ${statusBadgeHtml}
         </div>
-        ${bulkActionsHtml}
+        <div class="day-actions-row">
+          ${bulkActionsHtml}
+          <button type="button" class="btn-bulk btn-bulk-note ${hasNote ? 'has-note' : ''}" data-date="${dateStr}" id="btn-note-toggle-${dateStr}" title="${hasNote ? 'Редактировать заметку на день' : 'Добавить заметку на день'}">
+            <span>📝</span>
+            <span class="btn-note-text">${hasNote ? 'Заметка' : '+ Заметка'}</span>
+          </button>
+        </div>
       </div>
       <div class="diary-day-body" id="day-body-${dateStr}">
       </div>
@@ -490,7 +503,19 @@
       if (btnReset) btnReset.addEventListener('click', () => setDayBulkAttendance(dateStr, dayInfo.key, 'was'));
     }
 
+    const btnNoteToggle = card.querySelector(`#btn-note-toggle-${dateStr}`);
+    if (btnNoteToggle) {
+      btnNoteToggle.addEventListener('click', () => toggleDayNote(dateStr));
+    }
+
     const bodyContainer = card.querySelector(`#day-body-${dateStr}`);
+
+    // Блок заметки на день (размещается вверху карточки дня)
+    const noteContainer = document.createElement('div');
+    noteContainer.className = 'day-note-container';
+    noteContainer.id = `day-note-container-${dateStr}`;
+    bodyContainer.appendChild(noteContainer);
+    renderDayNoteSection(dateStr, noteContainer);
 
     if (dayStatus.isHoliday) {
       const notice = document.createElement('div');
@@ -777,6 +802,143 @@
       : (status === 'excused' ? 'уважительная причина (У) на все уроки дня' : '«Был» для всех уроков');
 
     showToast(`${dayName}: установлен статус ${statusText}`, 'success');
+  }
+
+  /* ==========================================================================
+     Заметки на день (Day Notes)
+     ========================================================================== */
+  function updateNoteButtonState(dateStr) {
+    const btn = document.getElementById(`btn-note-toggle-${dateStr}`);
+    if (!btn) return;
+    const hasNote = Boolean(state.dayNotes && state.dayNotes[dateStr] && state.dayNotes[dateStr].trim());
+    const textSpan = btn.querySelector('.btn-note-text');
+    if (hasNote) {
+      btn.classList.add('has-note');
+      btn.title = 'Редактировать заметку на день';
+      if (textSpan) textSpan.textContent = 'Заметка';
+    } else {
+      btn.classList.remove('has-note');
+      btn.title = 'Добавить заметку на день';
+      if (textSpan) textSpan.textContent = '+ Заметка';
+    }
+  }
+
+  function toggleDayNote(dateStr) {
+    const container = document.getElementById(`day-note-container-${dateStr}`);
+    if (!container) return;
+
+    // Проверяем, открыт ли уже режим редактирования
+    const isEditing = Boolean(container.querySelector('.day-note-edit'));
+    if (isEditing) {
+      renderDayNoteSection(dateStr, container, false);
+    } else {
+      renderDayNoteSection(dateStr, container, true);
+    }
+  }
+
+  function renderDayNoteSection(dateStr, container, isEditing = false) {
+    if (!container) return;
+    state.dayNotes = state.dayNotes || {};
+    const noteText = (state.dayNotes[dateStr] || '').trim();
+
+    container.innerHTML = '';
+
+    if (isEditing) {
+      const editBox = document.createElement('div');
+      editBox.className = 'day-note-edit';
+      editBox.innerHTML = `
+        <textarea class="day-note-textarea" placeholder="Заметка на день (например: сдать справку, домашнее задание, напоминания)..." rows="2"></textarea>
+        <div class="day-note-edit-footer">
+          <span class="day-note-hint">Enter — новая строка. Автосохранение</span>
+          <button type="button" class="btn-note-done">Готово</button>
+        </div>
+      `;
+
+      const textarea = editBox.querySelector('.day-note-textarea');
+      const btnDone = editBox.querySelector('.btn-note-done');
+
+      textarea.value = state.dayNotes[dateStr] || '';
+
+      const autoResize = () => {
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.max(52, textarea.scrollHeight) + 'px';
+      };
+
+      const saveNoteContent = () => {
+        const val = textarea.value;
+        if (val.trim()) {
+          state.dayNotes[dateStr] = val;
+        } else {
+          delete state.dayNotes[dateStr];
+        }
+        saveSettings();
+        updateNoteButtonState(dateStr);
+      };
+
+      textarea.addEventListener('input', () => {
+        autoResize();
+        saveNoteContent();
+      });
+
+      textarea.addEventListener('blur', () => {
+        saveNoteContent();
+      });
+
+      btnDone.addEventListener('click', (e) => {
+        e.stopPropagation();
+        saveNoteContent();
+        renderDayNoteSection(dateStr, container, false);
+      });
+
+      textarea.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          saveNoteContent();
+          renderDayNoteSection(dateStr, container, false);
+        }
+      });
+
+      container.appendChild(editBox);
+      autoResize();
+      setTimeout(() => textarea.focus(), 10);
+      return;
+    }
+
+    // Режим просмотра (если есть текст заметки)
+    if (noteText) {
+      const viewBox = document.createElement('div');
+      viewBox.className = 'day-note-view';
+      viewBox.title = 'Нажмите, чтобы редактировать заметку';
+      viewBox.innerHTML = `
+        <div class="day-note-header">
+          <span class="day-note-badge">
+            <span>📝</span> Заметка
+          </span>
+          <button type="button" class="day-note-btn-del" title="Удалить заметку">×</button>
+        </div>
+        <div class="day-note-content">${escapeHtml(state.dayNotes[dateStr] || '')}</div>
+      `;
+
+      // Клик по тексту заметки переключает в режим редактирования
+      viewBox.addEventListener('click', (e) => {
+        if (e.target.closest('.day-note-btn-del')) return;
+        renderDayNoteSection(dateStr, container, true);
+      });
+
+      // Кнопка удаления заметки
+      const delBtn = viewBox.querySelector('.day-note-btn-del');
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (confirm('Удалить заметку на этот день?')) {
+          delete state.dayNotes[dateStr];
+          saveSettings();
+          renderDayNoteSection(dateStr, container, false);
+          updateNoteButtonState(dateStr);
+          showToast('Заметка удалена', 'info');
+        }
+      });
+
+      container.appendChild(viewBox);
+    }
   }
 
   /* ==========================================================================
@@ -1587,6 +1749,9 @@
             schedule: sanitizeSchedule(imported.schedule),
             diaryRecords: imported.diaryRecords && typeof imported.diaryRecords === 'object'
               ? imported.diaryRecords
+              : {},
+            dayNotes: imported.dayNotes && typeof imported.dayNotes === 'object'
+              ? imported.dayNotes
               : {}
           };
 
