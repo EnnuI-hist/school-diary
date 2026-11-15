@@ -332,6 +332,32 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   font-weight: 500;
 }
 
+.input-with-unit {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-with-unit .input-control {
+  padding-right: 36px;
+}
+
+.input-unit {
+  position: absolute;
+  right: 12px;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.form-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
 /* Кнопки */
 .btn {
   display: inline-flex;
@@ -1618,6 +1644,11 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   background-color: rgba(239, 68, 68, 0.02);
 }
 
+.subject-stat-card.has-warning {
+  border-color: rgba(245, 158, 11, 0.45);
+  background-color: rgba(245, 158, 11, 0.02);
+}
+
 .subject-header-row {
   display: flex;
   align-items: center;
@@ -1823,6 +1854,21 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   background-color: rgba(239, 68, 68, 0.15);
   color: #fca5a5;
   border: 1px solid rgba(239, 68, 68, 0.4);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* Бейдж приближения к порогу */
+.risk-caution-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background-color: rgba(245, 158, 11, 0.14);
+  color: #fde68a;
+  border: 1px solid rgba(245, 158, 11, 0.38);
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 0.76rem;

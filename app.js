@@ -135,7 +135,8 @@
       saturday: []
     },
     diaryRecords: {},
-    dayNotes: {}
+    dayNotes: {},
+    absenceWarningThreshold: 50
   };
 
   // Рабочее состояние приложения
@@ -156,6 +157,7 @@
     initDiary();
     initStats();
     initSemesterDates();
+    initAbsenceThresholdSetting();
     initHolidays();
     initSubjectsManager();
     initWeekSchedule();
@@ -184,6 +186,9 @@
         if (parsed.dayNotes && typeof parsed.dayNotes === 'object') {
           upgraded.dayNotes = parsed.dayNotes;
         }
+        if (typeof parsed.absenceWarningThreshold === 'number' && !isNaN(parsed.absenceWarningThreshold)) {
+          upgraded.absenceWarningThreshold = Math.max(10, Math.min(100, parsed.absenceWarningThreshold));
+        }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(upgraded));
         return upgraded;
       }
@@ -195,6 +200,10 @@
         sem2End: parsed.semesters?.sem2End || DEFAULT_SETTINGS.semesters.sem2End
       };
 
+      const absenceWarningThreshold = (typeof parsed.absenceWarningThreshold === 'number' && !isNaN(parsed.absenceWarningThreshold))
+        ? Math.max(10, Math.min(100, parsed.absenceWarningThreshold))
+        : DEFAULT_SETTINGS.absenceWarningThreshold;
+
       return {
         configVersion: parsed.configVersion || CONFIG_VERSION,
         semesters,
@@ -202,7 +211,8 @@
         subjects: Array.isArray(parsed.subjects) && parsed.subjects.length > 0 ? parsed.subjects : [...DEFAULT_SETTINGS.subjects],
         schedule: sanitizeSchedule(parsed.schedule),
         diaryRecords: parsed.diaryRecords && typeof parsed.diaryRecords === 'object' ? parsed.diaryRecords : {},
-        dayNotes: parsed.dayNotes && typeof parsed.dayNotes === 'object' ? parsed.dayNotes : {}
+        dayNotes: parsed.dayNotes && typeof parsed.dayNotes === 'object' ? parsed.dayNotes : {},
+        absenceWarningThreshold
       };
     } catch (e) {
       console.error('Ошибка чтения данных из localStorage:', e);
@@ -1216,9 +1226,18 @@
     const excusedPct = lessons > 0 ? (excused / lessons) * 100 : 0;
     const totalAbsPct = lessons > 0 ? (totalAbs / lessons) * 100 : 0;
 
-    const isRisk = unexcusedPct >= 25;
+    const threshold = (typeof state.absenceWarningThreshold === 'number' && !isNaN(state.absenceWarningThreshold))
+      ? state.absenceWarningThreshold
+      : 50;
+    const cautionThreshold = Math.max(1, threshold - 10);
+
+    const isRisk = unexcusedPct >= threshold;
+    const isCaution = !isRisk && unexcused > 0 && unexcusedPct >= cautionThreshold;
+
     if (isRisk) {
       card.classList.add('has-risk');
+    } else if (isCaution) {
+      card.classList.add('has-warning');
     }
 
     // Отрисовка бейджей оценок
@@ -1229,12 +1248,18 @@
       marksListHtml = marks.map(m => `<span class="mark-badge mark-badge-${m}">${m}</span>`).join('');
     }
 
-    // Индикатор риска
+    // Индикатор риска и приближения к порогу
     let riskHtml = '';
     if (isRisk) {
       riskHtml = `
         <div class="risk-warning-badge">
-          ⚠️ Риск неаттестации: ${unexcusedPct.toFixed(1)}% прогулов (критический порог 25–30%)
+          ⚠️ Риск неаттестации: ${unexcusedPct.toFixed(1)}% прогулов (установленный порог — ${threshold}%)
+        </div>
+      `;
+    } else if (isCaution) {
+      riskHtml = `
+        <div class="risk-caution-badge">
+          ⚡ Приближение к порогу: ${unexcusedPct.toFixed(1)}% прогулов (лимит — ${threshold}%)
         </div>
       `;
     }
@@ -1391,6 +1416,44 @@
         renderStats();
         showToast('Даты семестра обновлены', 'info');
       });
+    });
+  }
+
+  /* ==========================================================================
+     Контроль посещаемости: Порог риска неаттестации
+     ========================================================================== */
+  function initAbsenceThresholdSetting() {
+    const input = document.getElementById('absence-threshold-input');
+    if (!input) return;
+
+    input.value = typeof state.absenceWarningThreshold === 'number'
+      ? state.absenceWarningThreshold
+      : 50;
+
+    const commitThreshold = () => {
+      let val = parseInt(input.value, 10);
+      if (isNaN(val)) {
+        val = 50;
+      }
+      val = Math.max(10, Math.min(100, val));
+      input.value = val;
+
+      if (state.absenceWarningThreshold !== val) {
+        state.absenceWarningThreshold = val;
+        saveSettings();
+        renderStats();
+        showToast(`Порог риска неаттестации установлен: ${val}%`, 'info');
+      }
+    };
+
+    input.addEventListener('change', commitThreshold);
+    input.addEventListener('input', () => {
+      const val = parseInt(input.value, 10);
+      if (!isNaN(val) && val >= 10 && val <= 100) {
+        state.absenceWarningThreshold = val;
+        saveSettings();
+        renderStats();
+      }
     });
   }
 
@@ -1752,12 +1815,16 @@
               : {},
             dayNotes: imported.dayNotes && typeof imported.dayNotes === 'object'
               ? imported.dayNotes
-              : {}
+              : {},
+            absenceWarningThreshold: (typeof imported.absenceWarningThreshold === 'number' && !isNaN(imported.absenceWarningThreshold))
+              ? Math.max(10, Math.min(100, imported.absenceWarningThreshold))
+              : DEFAULT_SETTINGS.absenceWarningThreshold
           };
 
           saveSettings();
 
           initSemesterDates();
+          initAbsenceThresholdSetting();
           renderHolidaysList();
           renderSubjectsTags();
           refreshAllDaySelects();
@@ -1783,6 +1850,7 @@
         saveSettings();
 
         initSemesterDates();
+        initAbsenceThresholdSetting();
         renderHolidaysList();
         renderSubjectsTags();
         refreshAllDaySelects();

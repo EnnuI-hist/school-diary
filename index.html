@@ -372,7 +372,31 @@
             </div>
           </div>
 
-          <!-- Блок 4: Резервная копия -->
+          <!-- Блок 4: Контроль посещаемости -->
+          <div class="card settings-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="badge">Блок 4</span>
+                <h2>Контроль посещаемости</h2>
+              </div>
+              <p class="card-description">Настройка порога предупреждения о риске неаттестации по предметам во вкладке «Статистика».</p>
+            </div>
+            
+            <div class="card-body">
+              <div class="form-row">
+                <div class="form-group" style="max-width: 320px;">
+                  <label for="absence-threshold-input">Порог прогулов для предупреждения (%):</label>
+                  <div class="input-with-unit">
+                    <input type="number" id="absence-threshold-input" class="input-control" min="10" max="100" step="5" value="50">
+                    <span class="input-unit">%</span>
+                  </div>
+                  <span class="form-hint">При достижении этого процента прогулов (Н) карточка подсветится красным. За 10% до порога — желтым.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Блок 5: Резервная копия -->
           <div class="card settings-card backup-card">
             <div class="card-header">
               <div class="card-title-group">
