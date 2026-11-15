@@ -998,6 +998,38 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   border-color: rgba(16, 185, 129, 0.4);
 }
 
+.btn-bulk-holiday:hover {
+  background-color: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+.btn-bulk-restore {
+  background-color: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  border-color: rgba(99, 102, 241, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-bulk-restore:hover {
+  background-color: rgba(99, 102, 241, 0.25);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
+.day-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.day-right-actions .btn-bulk-note {
+  margin-left: 0;
+}
+
 /* Содержимое дня (список уроков / баннер) */
 .diary-day-body {
   display: flex;
@@ -1022,6 +1054,41 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   height: 20px;
   color: #fbbf24;
   flex-shrink: 0;
+}
+
+.custom-holiday-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: rgba(251, 191, 36, 0.05);
+  border: 1px dashed rgba(251, 191, 36, 0.35);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  margin-top: 6px;
+}
+
+.custom-holiday-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.custom-holiday-desc {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.custom-holiday-desc strong {
+  color: #fbbf24;
+  font-size: 0.92rem;
+}
+
+.custom-holiday-desc span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
 }
 
 .diary-lessons-list {
@@ -2087,6 +2154,11 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   .day-bulk-actions {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .day-right-actions {
+    width: 100%;
+    justify-content: flex-end;
   }
 
   .btn-bulk {

@@ -136,7 +136,8 @@
     },
     diaryRecords: {},
     dayNotes: {},
-    absenceWarningThreshold: 50
+    absenceWarningThreshold: 50,
+    customHolidays: {}
   };
 
   // Рабочее состояние приложения
@@ -189,6 +190,9 @@
         if (typeof parsed.absenceWarningThreshold === 'number' && !isNaN(parsed.absenceWarningThreshold)) {
           upgraded.absenceWarningThreshold = Math.max(10, Math.min(100, parsed.absenceWarningThreshold));
         }
+        if (parsed.customHolidays && typeof parsed.customHolidays === 'object') {
+          upgraded.customHolidays = parsed.customHolidays;
+        }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(upgraded));
         return upgraded;
       }
@@ -212,7 +216,8 @@
         schedule: sanitizeSchedule(parsed.schedule),
         diaryRecords: parsed.diaryRecords && typeof parsed.diaryRecords === 'object' ? parsed.diaryRecords : {},
         dayNotes: parsed.dayNotes && typeof parsed.dayNotes === 'object' ? parsed.dayNotes : {},
-        absenceWarningThreshold
+        absenceWarningThreshold,
+        customHolidays: (parsed.customHolidays && typeof parsed.customHolidays === 'object') ? parsed.customHolidays : {}
       };
     } catch (e) {
       console.error('Ошибка чтения данных из localStorage:', e);
@@ -357,9 +362,22 @@
         return {
           isSchoolDay: false,
           isHoliday: true,
+          isCustomHoliday: false,
           title: holiday.title
         };
       }
+    }
+
+    if (state.customHolidays && state.customHolidays[dateStr]) {
+      const customTitle = typeof state.customHolidays[dateStr] === 'string'
+        ? state.customHolidays[dateStr]
+        : 'Выходной / Праздник';
+      return {
+        isSchoolDay: false,
+        isHoliday: true,
+        isCustomHoliday: true,
+        title: customTitle
+      };
     }
 
     const { sem1Start, sem1End, sem2Start, sem2End } = state.semesters;
@@ -407,8 +425,9 @@
       weekSubBadge.style.display = 'inline-block';
     }
 
-    if (monStatus.isHoliday || friStatus.isHoliday) {
-      const holName = monStatus.title || friStatus.title || 'Каникулы';
+    const isWeekVacation = (monStatus.isHoliday && !monStatus.isCustomHoliday) || (friStatus.isHoliday && !friStatus.isCustomHoliday);
+    if (isWeekVacation) {
+      const holName = (!monStatus.isCustomHoliday ? monStatus.title : '') || (!friStatus.isCustomHoliday ? friStatus.title : '') || 'Каникулы';
       weekStatusBadge.textContent = holName;
       weekStatusBadge.className = 'week-status-badge badge-holiday-tag';
       weekStatusBadge.style.display = 'inline-block';
@@ -440,7 +459,7 @@
     }
 
     if (!dayStatus.isSchoolDay) {
-      if (dayStatus.isHoliday) {
+      if (dayStatus.isHoliday || dayStatus.isCustomHoliday) {
         card.classList.add('is-holiday');
       } else {
         card.classList.add('is-non-school');
@@ -454,7 +473,9 @@
 
     const formattedShortDate = formatDateShortRussian(dayDate);
     let statusBadgeHtml = '';
-    if (dayStatus.isHoliday) {
+    if (dayStatus.isCustomHoliday) {
+      statusBadgeHtml = `<span class="badge-holiday-tag" title="Выходной / Праздник">Выходной / Праздник</span>`;
+    } else if (dayStatus.isHoliday) {
       statusBadgeHtml = `<span class="badge-holiday-tag" title="Каникулы">Каникулы: ${escapeHtml(dayStatus.title)}</span>`;
     } else if (dayStatus.isOutsideSemester) {
       statusBadgeHtml = `<span class="badge-off-tag">Неучебный день</span>`;
@@ -480,6 +501,50 @@
     ` : '';
 
     const hasNote = Boolean(state.dayNotes && state.dayNotes[dateStr] && state.dayNotes[dateStr].trim());
+    const isCustom = Boolean(dayStatus.isCustomHoliday);
+
+    let actionsRowHtml = '';
+    if (isCustom) {
+      actionsRowHtml = `
+        <div class="day-actions-row">
+          <button type="button" class="btn-bulk btn-bulk-restore" data-date="${dateStr}" id="btn-holiday-toggle-${dateStr}" title="Вернуть учебный день и сетку уроков">
+            <span>↩️</span> Вернуть учебный день
+          </button>
+          <div class="day-right-actions">
+            <button type="button" class="btn-bulk btn-bulk-note ${hasNote ? 'has-note' : ''}" data-date="${dateStr}" id="btn-note-toggle-${dateStr}" title="${hasNote ? 'Редактировать заметку на день' : 'Добавить заметку на день'}">
+              <span>📝</span>
+              <span class="btn-note-text">${hasNote ? 'Заметка' : '+ Заметка'}</span>
+            </button>
+          </div>
+        </div>
+      `;
+    } else if (dayStatus.isSchoolDay) {
+      actionsRowHtml = `
+        <div class="day-actions-row">
+          ${bulkActionsHtml}
+          <div class="day-right-actions">
+            <button type="button" class="btn-bulk btn-bulk-holiday" data-date="${dateStr}" id="btn-holiday-toggle-${dateStr}" title="Пометить день как разовый выходной / праздник / день олимпиады">
+              <span>🏖</span> Выходной
+            </button>
+            <button type="button" class="btn-bulk btn-bulk-note ${hasNote ? 'has-note' : ''}" data-date="${dateStr}" id="btn-note-toggle-${dateStr}" title="${hasNote ? 'Редактировать заметку на день' : 'Добавить заметку на день'}">
+              <span>📝</span>
+              <span class="btn-note-text">${hasNote ? 'Заметка' : '+ Заметка'}</span>
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      actionsRowHtml = `
+        <div class="day-actions-row">
+          <div class="day-right-actions" style="margin-left: auto;">
+            <button type="button" class="btn-bulk btn-bulk-note ${hasNote ? 'has-note' : ''}" data-date="${dateStr}" id="btn-note-toggle-${dateStr}" title="${hasNote ? 'Редактировать заметку на день' : 'Добавить заметку на день'}">
+              <span>📝</span>
+              <span class="btn-note-text">${hasNote ? 'Заметка' : '+ Заметка'}</span>
+            </button>
+          </div>
+        </div>
+      `;
+    }
 
     card.innerHTML = `
       <div class="diary-day-header">
@@ -491,19 +556,13 @@
           </div>
           ${statusBadgeHtml}
         </div>
-        <div class="day-actions-row">
-          ${bulkActionsHtml}
-          <button type="button" class="btn-bulk btn-bulk-note ${hasNote ? 'has-note' : ''}" data-date="${dateStr}" id="btn-note-toggle-${dateStr}" title="${hasNote ? 'Редактировать заметку на день' : 'Добавить заметку на день'}">
-            <span>📝</span>
-            <span class="btn-note-text">${hasNote ? 'Заметка' : '+ Заметка'}</span>
-          </button>
-        </div>
+        ${actionsRowHtml}
       </div>
       <div class="diary-day-body" id="day-body-${dateStr}">
       </div>
     `;
 
-    if (hasActiveLessons) {
+    if (hasActiveLessons && !isCustom) {
       const btnUnexcused = card.querySelector('.btn-bulk-unexcused');
       const btnExcused = card.querySelector('.btn-bulk-excused');
       const btnReset = card.querySelector('.btn-bulk-reset');
@@ -511,6 +570,11 @@
       if (btnUnexcused) btnUnexcused.addEventListener('click', () => setDayBulkAttendance(dateStr, dayInfo.key, 'unexcused'));
       if (btnExcused) btnExcused.addEventListener('click', () => setDayBulkAttendance(dateStr, dayInfo.key, 'excused'));
       if (btnReset) btnReset.addEventListener('click', () => setDayBulkAttendance(dateStr, dayInfo.key, 'was'));
+    }
+
+    const btnHolidayToggle = card.querySelector(`#btn-holiday-toggle-${dateStr}`);
+    if (btnHolidayToggle) {
+      btnHolidayToggle.addEventListener('click', () => toggleCustomHoliday(dateStr));
     }
 
     const btnNoteToggle = card.querySelector(`#btn-note-toggle-${dateStr}`);
@@ -527,7 +591,19 @@
     bodyContainer.appendChild(noteContainer);
     renderDayNoteSection(dateStr, noteContainer);
 
-    if (dayStatus.isHoliday) {
+    if (dayStatus.isCustomHoliday) {
+      const notice = document.createElement('div');
+      notice.className = 'holiday-notice custom-holiday-notice';
+      notice.innerHTML = `
+        <span class="custom-holiday-icon">🏖</span>
+        <div class="custom-holiday-desc">
+          <strong>Выходной / Праздник</strong>
+          <span>Занятия отменены и исключены из расчета уроков и прогулов.</span>
+        </div>
+      `;
+      bodyContainer.appendChild(notice);
+      return card;
+    } else if (dayStatus.isHoliday) {
       const notice = document.createElement('div');
       notice.className = 'holiday-notice';
       notice.innerHTML = `
@@ -815,6 +891,26 @@
   }
 
   /* ==========================================================================
+     Разовые выходные и праздники (Custom Holidays)
+     ========================================================================== */
+  function toggleCustomHoliday(dateStr) {
+    state.customHolidays = state.customHolidays || {};
+    if (state.customHolidays[dateStr]) {
+      delete state.customHolidays[dateStr];
+      saveSettings();
+      renderDiaryWeek();
+      renderStats();
+      showToast('Учебный день возвращен', 'info');
+    } else {
+      state.customHolidays[dateStr] = 'Выходной / Праздник';
+      saveSettings();
+      renderDiaryWeek();
+      renderStats();
+      showToast('День отмечен как выходной / праздник', 'success');
+    }
+  }
+
+  /* ==========================================================================
      Заметки на день (Day Notes)
      ========================================================================== */
   function updateNoteButtonState(dateStr) {
@@ -1022,7 +1118,9 @@
       const dayNum = curr.getDay(); // 0 - Вс
 
       if (dayNum !== 0) {
-        const isHoliday = Array.isArray(state.holidays) && state.holidays.some(h => h.start <= dateStr && dateStr <= h.end);
+        const isOfficialHoliday = Array.isArray(state.holidays) && state.holidays.some(h => h.start <= dateStr && dateStr <= h.end);
+        const isCustomHoliday = Boolean(state.customHolidays && state.customHolidays[dateStr]);
+        const isHoliday = isOfficialHoliday || isCustomHoliday;
         
         let inSemester = true;
         if (period === 'year') {
@@ -1872,7 +1970,10 @@
               : {},
             absenceWarningThreshold: (typeof imported.absenceWarningThreshold === 'number' && !isNaN(imported.absenceWarningThreshold))
               ? Math.max(10, Math.min(100, imported.absenceWarningThreshold))
-              : DEFAULT_SETTINGS.absenceWarningThreshold
+              : DEFAULT_SETTINGS.absenceWarningThreshold,
+            customHolidays: (imported.customHolidays && typeof imported.customHolidays === 'object')
+              ? imported.customHolidays
+              : {}
           };
 
           saveSettings();
